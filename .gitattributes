@@ -1,0 +1,8 @@
+# Normalize line endings in the repo; check out with the right ones per file type.
+* text=auto
+
+# Batch files need CRLF (labels/goto can break with LF-only endings).
+*.bat text eol=crlf
+
+# Shell scripts need LF or they fail on macOS/Linux.
+*.sh text eol=lf

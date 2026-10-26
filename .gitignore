@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Partial downloads, if yt-dlp is ever run from this folder
+*.part
+*.ytdl
+
+# OS clutter
+.DS_Store
+Thumbs.db
+
+# Personal Claude Code settings
+.claude/settings.local.json

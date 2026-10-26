@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Saver</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Video Saver</h1>
+      <p class="tagline">Runs on your computer using yt-dlp. Nothing is uploaded anywhere.</p>
+    </header>
+
+    <!-- Link: paste a YouTube link -->
+    <section>
+      <label for="link" class="label">Link</label>
+      <div class="row">
+        <input id="link" type="text" inputmode="url" autocomplete="off" spellcheck="false"
+               placeholder="Paste a YouTube link" autofocus>
+        <button id="paste" type="button" class="secondary">Paste</button>
+      </div>
+      <p id="link-message" class="message" role="status"></p>
+    </section>
+
+    <!-- Video: what was found (hidden until a link is read) -->
+    <section id="video" hidden>
+      <span class="label">Video</span>
+      <div class="card">
+        <img id="thumbnail" alt="Video thumbnail">
+        <div class="details">
+          <a id="title" target="_blank" rel="noopener noreferrer"></a>
+          <a id="channel" target="_blank" rel="noopener noreferrer"></a>
+          <span id="duration"></span>
+        </div>
+      </div>
+      <div class="row">
+        <input id="clean-link" type="text" readonly aria-label="Clean video link">
+        <button id="copy" type="button" class="secondary">Copy link</button>
+      </div>
+    </section>
+
+    <!-- Download: choose format + quality -->
+    <section id="options" hidden>
+      <span class="label">Download</span>
+      <div class="row">
+        <label class="field">Format
+          <select id="format">
+            <option value="mp4">MP4 — video (most compatible)</option>
+            <option value="webm">WebM — video</option>
+            <option value="mkv">MKV — video (keeps original streams)</option>
+            <option value="m4a">M4A — audio only</option>
+          </select>
+        </label>
+        <label class="field">Quality
+          <select id="quality"></select>
+        </label>
+      </div>
+      <div class="actions">
+        <button id="download" type="button">Download</button>
+      </div>
+
+      <div id="progress-area" hidden>
+        <progress id="progress" max="100" value="0"></progress>
+        <p id="progress-text" class="message" role="status"></p>
+        <button id="show-file" type="button" class="secondary" hidden>Show in folder</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Files are saved to your Downloads folder.</span>
+    <span>yt-dlp <span id="version">…</span> ·
+      <button id="update" type="button" class="link">Update yt-dlp</button></span>
+    <p id="update-message" class="message" role="status"></p>
+  </footer>
+</body>
+</html>
