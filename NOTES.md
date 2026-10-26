@@ -15,7 +15,9 @@ by-the-book (official docs), clearly commented, nicely labeled.
 
 ## Status — 2026-10-25
 
-**Working and tested.** v1 is complete. Not yet pushed to GitHub (local repo only).
+**Working and tested.** v1 is complete. Pushed to a **private** GitHub repo,
+https://github.com/TheMysticTurtle/video-saver. The owner is testing it before
+making it public.
 
 ### Done
 - [x] Researched yt-dlp README (format sorting, progress template, `-O`, `-J`,
@@ -30,7 +32,8 @@ by-the-book (official docs), clearly commented, nicely labeled.
 - [x] README, LICENSE (MIT), .gitignore, .gitattributes, git init
 
 ### Next / ideas (not started — owner decides)
-- [ ] Create the GitHub repo and push (needs owner's go-ahead)
+- [x] Create the GitHub repo and push (private, 2026-10-25)
+- [ ] Owner tests it, then decides whether to make the repo public
 - [ ] Optional: make the local page installable as a PWA (own icon/window)
 - [ ] Optional: playlist support (deliberately left out to keep it simple)
 
