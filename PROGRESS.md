@@ -35,9 +35,13 @@ owner's art: icons, app header, installer, README/GitHub.
 - .NET's icon reader can't decode Tauri's PNG-in-ICO; extracting the PNGs
   showed the icons are fine.
 
+- Owner picked the transparent banner ("no glow background"). The hero now
+  shows the Alt banner with "New download" underneath, replacing GPT's film
+  reel (D-25). Previewed at 1000x740 in light and dark, and at 720x600.
+
 **Where we landed:** `feature/dark-studio`, not merged, not pushed.
 
-**Next:** the owner's picks (banner look, merge), then the first Release.
+**Next:** merge into `main` (owner's call), push, then the first Release.
 
 ### Session 2026-11-22 (later) — efficiency pass
 **Goal:** owner: "make sure it's as efficient as it can be. not re-reading stuff it doesnt need to or duplicating calculations/data flows." Approved: "Fix all seven".

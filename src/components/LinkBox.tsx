@@ -1,3 +1,6 @@
+// Step 1: paste a link. The "New download" hero (the Alt banner) shows until a video is loaded.
+import heroBanner from "../assets/hero-banner.png";
+
 interface Props {
   value: string;
   onChange: (value: string) => void;
@@ -28,13 +31,10 @@ export default function LinkBox({ value, onChange, onSubmit, busy, locked, compa
     <section className={compact ? "source compact" : "source"}>
       {!compact && (
         <div className="hero">
+          <img className="hero-banner" src={heroBanner} alt="" aria-hidden="true" />
           <div className="hero-copy">
             <h1>New download</h1>
             <p>Save a YouTube video or just its audio.</p>
-          </div>
-          <div className="reel-art" aria-hidden="true">
-            <div className="film-tail" />
-            <div className="reel" />
           </div>
         </div>
       )}

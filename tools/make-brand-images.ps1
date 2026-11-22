@@ -7,6 +7,7 @@
 
     media/VideoVacuumLogoLarge-Transparent.png -> src-tauri/icons/app-icon.png  (1024x1024; then `npx tauri icon`)
     media/VideoVacuum-SkinnyBanner.png         -> src/assets/header-banner.png  (trimmed, 88 px tall: 2x of 44 px)
+    media/VideoVacuumBanner-Alt.png            -> src/assets/hero-banner.png    (trimmed, 320 px tall; the "New download" hero)
     media/VideoVacuumBanner.png                -> docs/images/banner.jpg        (1280 wide, README)
                                                -> docs/images/social-preview.jpg (1280x640, GitHub social preview)
                                                -> src-tauri/installer/header.bmp (150x57, installer pages)
@@ -163,6 +164,15 @@ $header = [BrandImages]::Scale($skinny, $bounds, $width, $height)
 $header.Save((Out-Path 'src/assets/header-banner.png'), [System.Drawing.Imaging.ImageFormat]::Png)
 $header.Dispose(); $skinny.Dispose()
 
+# 2b. "New download" hero: the Alt banner trimmed to its artwork, 320 px tall (sharp at up to 160 px on 2x screens).
+$alt = Open-Art 'VideoVacuumBanner-Alt.png'
+$bounds = [BrandImages]::OpaqueBounds($alt, 24)
+$height = 320
+$width = [int][Math]::Round($bounds.Width * $height / $bounds.Height)
+$hero = [BrandImages]::Scale($alt, $bounds, $width, $height)
+$hero.Save((Out-Path 'src/assets/hero-banner.png'), [System.Drawing.Imaging.ImageFormat]::Png)
+$hero.Dispose(); $alt.Dispose()
+
 # 3. README banner, GitHub social preview and the installer header strip, all from the banner.
 $banner = Open-Art 'VideoVacuumBanner.png'
 if ($BannerGlow) { $plain = $banner; $banner = [BrandImages]::Opaque($plain); $plain.Dispose() }
@@ -181,6 +191,6 @@ $side.Save((Out-Path 'src-tauri/installer/sidebar.bmp'), [System.Drawing.Imaging
 $tile.Dispose()
 
 'Made:'
-'src-tauri/icons/app-icon.png', 'src/assets/header-banner.png', 'docs/images/banner.jpg',
+'src-tauri/icons/app-icon.png', 'src/assets/header-banner.png', 'src/assets/hero-banner.png', 'docs/images/banner.jpg',
 'docs/images/social-preview.jpg', 'src-tauri/installer/header.bmp', 'src-tauri/installer/sidebar.bmp' | ForEach-Object { Report $_ }
 'Next: npx tauri icon src-tauri/icons/app-icon.png -o src-tauri/icons'

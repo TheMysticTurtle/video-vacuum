@@ -209,3 +209,20 @@ Rerun the script, then `npx tauri icon`, whenever the art changes.
   default output shows the logo on navy, and `-BannerGlow` keeps the glow. The
   owner picks.
 **Supersedes:** the look in D-09.
+
+### D-25 ✅ Banner stays transparent; the hero is the Alt banner (2026-11-22)
+**Decision:**
+- The banner keeps its transparent background, with no glow (owner: "no
+  glow background lol"). The default output of `make-brand-images.ps1` stays.
+- The "New download" hero shows the owner's Alt banner
+  (`VideoVacuumBanner-Alt.png` → `src/assets/hero-banner.png`, trimmed, 320 px
+  tall) instead of GPT's CSS film reel. "New download" and the subtitle sit
+  underneath it, on a darker radial stage so the neon art pops in both themes.
+  Owner: "change that new download with the generic looking film thing to the
+  ALT banner and new download worked in somewhere there with it. since it
+  disappears when you type a link."
+**Consequence:**
+- The film-reel CSS is deleted.
+- The hero still hides once a video is loaded.
+- The hero image is ~516 KB; detailed glow art compresses poorly as PNG. It's
+  local, with no network cost.
