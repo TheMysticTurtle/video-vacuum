@@ -340,33 +340,72 @@ footer {
   margin: 4px 0 2px;
   overflow-wrap: anywhere;
 }
+/* Colors follow the Windows light/dark setting. Light is the default; the
+   dark values are the "dark studio" palette. The hero banner and film-reel
+   art keep their own fixed colors in both modes (it's artwork). */
 :root {
-  color-scheme: dark;
-  --bg: #101217;
-  --panel: #1a1d25;
-  --field: #101319;
-  --text: #eef0f8;
-  --muted: #a5acbd;
-  --border: #373c4a;
-  --accent: #bec4ff;
-  --accent-hover: #d7daff;
-  --accent-text: #181a31;
-  --error: #ffbd83;
+  color-scheme: light dark;
+  --bg: #f4f5f9;
+  --panel: #ffffff;
+  --field: #ffffff;
+  --text: #1b1d26;
+  --muted: #5d6475;
+  --border: #d6d9e3;
+  --accent: #4f57c9;
+  --accent-hover: #434ab3;
+  --accent-text: #ffffff;
+  --error: #9a5b00;
+  --glow: #e3e6fb;
+  --masthead: #ffffff;
+  --masthead-border: #e1e3ea;
+  --card-border: #d6d9e3;
+  --card-shadow: 0 15px 40px #1b1d2614;
+  --label: #4b5163;
+  --placeholder: #8a90a0;
+  --legal: #6b7182;
+  --engine: #3f4556;
+  --ready: #2f9d78;
+  --drawer-shadow: -10px 12px 52px #1b1d2624;
   --gutter: clamp(16px, 4vw, 48px);
   --drawer-width: min(350px, 94vw);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101217;
+    --panel: #1a1d25;
+    --field: #101319;
+    --text: #eef0f8;
+    --muted: #a5acbd;
+    --border: #373c4a;
+    --accent: #bec4ff;
+    --accent-hover: #d7daff;
+    --accent-text: #181a31;
+    --error: #ffbd83;
+    --glow: #1b1f31;
+    --masthead: #13151c;
+    --masthead-border: #2a2e39;
+    --card-border: #424858;
+    --card-shadow: 0 15px 40px #05060930;
+    --label: #c1c7d9;
+    --placeholder: #9097a9;
+    --legal: #949bad;
+    --engine: #c4cad5;
+    --ready: #84d8b8;
+    --drawer-shadow: -10px 12px 52px #0007;
+  }
 }
 
 .layout {
   min-height: 100%;
-  background: radial-gradient(ellipse at 78% 12%, #1b1f31 0, transparent 52%), var(--bg);
+  background: radial-gradient(ellipse at 78% 12%, var(--glow) 0, transparent 52%), var(--bg);
 }
 .masthead {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 13px var(--gutter);
-  background: #13151c;
-  border-bottom: 1px solid #2a2e39;
+  background: var(--masthead);
+  border-bottom: 1px solid var(--masthead-border);
 }
 .brand { display: flex; gap: 10px; align-items: center; font-size: 17px; font-weight: 650; letter-spacing: -.045em; }
 .brand img { width: 32px; height: 32px; }
@@ -376,12 +415,12 @@ main { max-width: 980px; padding: clamp(22px, 4vw, 44px) var(--gutter); margin: 
 h1, h2, p { margin-top: 0; }
 h2 { font-size: 1.15rem; letter-spacing: -.03em; }
 .source {
-  border: 1px solid #424858;
+  border: 1px solid var(--card-border);
   border-radius: 22px;
   overflow: hidden;
   background: var(--panel);
   margin-bottom: 16px;
-  box-shadow: 0 15px 40px #05060930;
+  box-shadow: var(--card-shadow);
 }
 .hero {
   min-height: clamp(178px, 23vw, 225px);
@@ -394,7 +433,7 @@ h2 { font-size: 1.15rem; letter-spacing: -.03em; }
   background: linear-gradient(107deg, #212b46 0%, #344261 46%, #555379 72%, #9990ae 100%);
 }
 .hero-copy { position: relative; z-index: 1; max-width: 60%; }
-.hero h1 { margin: 0; font-size: clamp(32px, 5.3vw, 61px); font-weight: 650; letter-spacing: -.065em; line-height: 1.1; }
+.hero h1 { color: #f3f4fa; margin: 0; font-size: clamp(32px, 5.3vw, 61px); font-weight: 650; letter-spacing: -.065em; line-height: 1.1; }
 .hero p { margin: 10px 0 0; color: #e0e5f3; font-size: clamp(14px, 1.75vw, 17px); }
 .reel-art { position: absolute; inset: 0 0 0 auto; width: 40%; pointer-events: none; }
 .reel {
@@ -428,21 +467,21 @@ h2 { font-size: 1.15rem; letter-spacing: -.03em; }
 .source-form input, .source-form button { min-height: 45px; }
 .source-form button { min-width: 108px; font-weight: 650; }
 .compact .source-form { padding: 16px 20px 20px; }
-.label { color: #c1c7d9; letter-spacing: .095em; }
+.label { color: var(--label); letter-spacing: .095em; }
 .field input, .field select { color: var(--text); }
 button { border-radius: 12px; }
-input::placeholder { color: #9097a9; }
+input::placeholder { color: var(--placeholder); }
 footer { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 15px; padding: 14px 2px 0; }
 footer .legal, footer .message { width: 100%; }
-footer .legal { font-size: 11px; color: #949bad; opacity: 1; }
-.engine { display: inline-flex; align-items: center; gap: 8px; color: #c4cad5; }
+footer .legal { font-size: 11px; color: var(--legal); opacity: 1; }
+.engine { display: inline-flex; align-items: center; gap: 8px; color: var(--engine); }
 .engine strong { font-weight: 550; }
 .indicator { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
-.indicator.ready { background: #84d8b8; box-shadow: 0 0 0 3px #84d8b817; }
+.indicator.ready { background: var(--ready); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ready) 12%, transparent); }
 .drawer {
   position: fixed; inset: 66px 10px 10px auto; width: var(--drawer-width); z-index: 2;
   border: 1px solid var(--border); border-radius: 18px;
-  background: #1a1d26; overflow-y: auto; box-shadow: -10px 12px 52px #0007;
+  background: var(--panel); overflow-y: auto; box-shadow: var(--drawer-shadow);
 }
 .drawer-body { display: grid; padding: 18px; gap: 13px; }
 .drawer-head { gap: 8px; }
