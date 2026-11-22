@@ -61,6 +61,13 @@ See `docs/TECH_REFERENCE.md` for the details. Releases are built, tested and
 published by the **Release** GitHub Actions workflow, which is started by hand. The original browser-based
 version is kept at the git tag `v1.0.0-local-web`.
 
+## Privacy
+
+Video Vacuum collects nothing: no analytics, no tracking, no accounts, no
+server of its own. It only talks to YouTube (through yt-dlp) when you look up
+or download a video, and keeps your history on your own computer. Details,
+including how to delete that history: [PRIVACY.md](PRIVACY.md).
+
 ## Use it responsibly
 
 Only download videos you have the right to save: your own uploads, openly
