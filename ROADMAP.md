@@ -14,7 +14,7 @@
 | `[?]` | **Owner's hands-on walkthrough** of the installed app | waiting on the owner |
 | `[x]` | **Pushed** `main` + tag `v1.0.0-local-web` (2026-11-22) | done |
 | `[x]` | **Release workflow** `.github/workflows/release.yml` (owner 2026-11-22: "builds it. tests it. and makes a release when i run it manually") | done |
-| `[?]` | **First run** of the Release workflow → GitHub release v2.0.0 | waiting on the owner |
+| `[x]` | **First release: v2.0.0** published 2026-11-22 by the Release workflow (run 45001774325, 20 min, every step passed); installer `Video.Vacuum_2.0.0_x64-setup.exe` 2.56 MB | done |
 
 ## 2. Next
 

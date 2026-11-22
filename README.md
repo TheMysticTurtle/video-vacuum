@@ -12,7 +12,8 @@ Nothing is uploaded anywhere.
 the window's browser engine (Microsoft WebView2), current Rust programs, and
 the tools it uses all need Windows 10 or newer.
 
-1. Download `Video Vacuum_2.0.0_x64-setup.exe` from the
+1. Download `Video.Vacuum_<version>_x64-setup.exe` (for example
+   `Video.Vacuum_2.0.0_x64-setup.exe`) from the
    [Releases](https://github.com/TheMysticTurtle/video-vacuum/releases) page and run it.
    - It installs just for you (no admin prompt) and adds Video Vacuum to the Start Menu.
    - The installer isn't code-signed yet, so Windows may show "Windows protected

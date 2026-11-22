@@ -33,8 +33,8 @@ name and folder, download. It keeps a searchable History drawer. Open source
   built, tested, merged and pushed; releases come from the manual **Release**
   GitHub Actions workflow (`docs/TECH_REFERENCE.md` §6). Installer smoke-tested.
   The dark-studio look (GPT, then Claude) with the owner's brand art is merged (D-24, D-25).
-  v1 is kept as tag `v1.0.0-local-web`. Waiting on the first release run and the
-  owner's walkthrough.
+  **v2.0.0 is released** on GitHub (2026-11-22; the repo is still private). v1 is kept as
+  tag `v1.0.0-local-web`. Waiting on the owner's walkthrough of the released installer.
 
 ## Documentation map
 

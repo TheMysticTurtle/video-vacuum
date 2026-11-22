@@ -142,6 +142,10 @@ gh workflow run release.yml -f draft=true   # save as a draft to review first
 
   To update one, look up the new release's commit SHA (`gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`).
 - **Cost:** private repos pay double for Windows minutes. It's one job, and Rust builds are cached.
+- **First run (v2.0.0, 2026-11-22):** 20 minutes, mostly compiling Rust with a
+  cold cache; later runs reuse the cache.
+- **GitHub renames assets with spaces:** `Video Vacuum_2.0.0_x64-setup.exe` is
+  published as `Video.Vacuum_2.0.0_x64-setup.exe`. Refer to the dotted name in docs.
 
 ## 7. Brand images
 
