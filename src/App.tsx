@@ -84,14 +84,11 @@ export default function App() {
     try {
       const jobId = await api.startDownload(
         {
-          url: video.url,
+          videoId: video.id,
           format: choices.format,
           height: choices.format === "m4a" ? null : choices.height,
           folder: choices.folder,
           fileName: choices.fileName,
-          title: video.title,
-          channel: video.channel,
-          thumbnail: video.thumbnail,
         },
         onEvent,
       );
@@ -188,7 +185,7 @@ export default function App() {
 
         <footer>
           <span>
-            yt-dlp {tools?.ytdlpVersion ?? "not found"}
+            yt-dlp {tools ? (tools.ytdlpVersion ?? "not found") : "…"}
             {tools?.ytdlpVersion && (
               <>
                 {" · "}

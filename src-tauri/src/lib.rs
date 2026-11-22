@@ -23,12 +23,14 @@ use tauri_plugin_opener::OpenerExt;
 use download::{DownloadEvent, DownloadRequest, JobControl};
 use store::{HistoryEntry, Store};
 use tools::{Tools, ToolsStatus};
-use ytdlp::VideoInfo;
+use ytdlp::{Lookup, VideoInfo};
 
 struct AppState {
     tools: Mutex<Tools>,
     jobs: Mutex<HashMap<String, Arc<JobControl>>>,
     store: Mutex<Store>,
+    /// The latest lookup, reused by the download so YouTube isn't asked twice.
+    lookup: Mutex<Option<Lookup>>,
 }
 
 fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
@@ -44,21 +46,16 @@ async fn blocking<T: Send + 'static>(work: impl FnOnce() -> T + Send + 'static) 
 
 #[tauri::command]
 async fn check_tools(state: State<'_, AppState>) -> Result<ToolsStatus, String> {
-    let (tools, status) = blocking(|| {
-        let tools = Tools::find();
-        let status = tools.status();
-        (tools, status)
-    })
-    .await?;
-    *lock(&state.tools) = tools;
-    Ok(status)
+    // The tools were found at startup; this only adds yt-dlp's version (~1 s).
+    let tools = lock(&state.tools).clone();
+    blocking(move || tools.status()).await
 }
 
 #[tauri::command]
 async fn install_tools(state: State<'_, AppState>) -> Result<ToolsStatus, String> {
-    let packages = lock(&state.tools).packages_to_install();
+    let current = lock(&state.tools).clone();
     let (tools, status) = blocking(move || {
-        tools::install_with_winget(&packages)?;
+        current.install_missing()?;
         let tools = Tools::find();
         let status = tools.status();
         Ok::<_, String>((tools, status))
@@ -100,7 +97,10 @@ async fn update_ytdlp(state: State<'_, AppState>) -> Result<UpdateResult, String
 async fn get_info(url: String, state: State<'_, AppState>) -> Result<VideoInfo, String> {
     let clean = link::clean_youtube_url(&url).ok_or("That doesn't look like a YouTube video link.")?;
     let tools = lock(&state.tools).clone();
-    blocking(move || ytdlp::video_info(&tools, &clean)).await?
+    let lookup = blocking(move || ytdlp::video_info(&tools, &clean)).await??;
+    let info = lookup.info.clone();
+    *lock(&state.lookup) = Some(lookup);
+    Ok(info)
 }
 
 #[tauri::command]
@@ -110,9 +110,10 @@ fn start_download(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let prepared = download::prepare(&request)?;
-    let tools = lock(&state.tools).clone();
     let job_id = download::new_id();
+    let temp_dir = app.path().app_cache_dir().map_err(|err| err.to_string())?;
+    let prepared = download::prepare(&request, lock(&state.lookup).as_ref(), &temp_dir, &job_id)?;
+    let tools = lock(&state.tools).clone();
     let job = Arc::new(JobControl::default());
     lock(&state.jobs).insert(job_id.clone(), job.clone());
 
@@ -245,9 +246,12 @@ pub fn run() {
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             app.manage(AppState {
-                tools: Mutex::new(Tools::default()),
+                // Found before the window opens (a quick folder check), so an
+                // early paste never finds the tools "missing".
+                tools: Mutex::new(Tools::find()),
                 jobs: Mutex::new(HashMap::new()),
                 store: Mutex::new(Store::open(data_dir)),
+                lookup: Mutex::new(None),
             });
             Ok(())
         })

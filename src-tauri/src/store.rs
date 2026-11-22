@@ -33,10 +33,17 @@ pub struct HistoryEntry {
     pub downloaded_at: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 struct HistoryFile {
     version: u32,
     entries: Vec<HistoryEntry>,
+}
+
+/// The same shape for saving, borrowing the list instead of copying it.
+#[derive(Serialize)]
+struct HistoryFileRef<'a> {
+    version: u32,
+    entries: &'a [HistoryEntry],
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -101,7 +108,7 @@ impl Store {
         if !self.history_writable {
             return Err("History was saved by a newer version of Video Vacuum, so it wasn't changed.".into());
         }
-        let file = HistoryFile { version: HISTORY_VERSION, entries: self.history.clone() };
+        let file = HistoryFileRef { version: HISTORY_VERSION, entries: &self.history };
         write_atomic(&self.dir.join("history.json"), &file)
     }
 }

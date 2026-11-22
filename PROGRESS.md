@@ -2,6 +2,41 @@
 
 Newest on top. Forward-looking items live in `ROADMAP.md`; the why lives in `docs/DECISIONS.md`.
 
+### Session 2026-11-22 (later) — efficiency pass
+**Goal:** owner: "make sure it's as efficient as it can be. not re-reading stuff it doesnt need to or duplicating calculations/data flows." Approved: "Fix all seven".
+
+**What we did:** branch `perf/efficiency`, D-23:
+- downloads reuse the paste-time lookup (`--load-info-json`)
+- the page sends only its choices
+- right-sized thumbnails
+- tools found at startup (fixes a startup race)
+- a single tool scan
+- history saved without copying
+- the download folder read once
+- README and release notes: "Requires Windows 10 or 11".
+
+**Test results:**
+- `cargo test` 16 passed (new tests: lookup reuse, stale lookup falls back to
+  the link, the temp file is removed, thumbnail pick); clippy `-D warnings`
+  clean; `tsc` clean.
+- **Measured first** (plain yt-dlp, 3 runs each): download from the link
+  avg 3.91 s vs from the saved lookup avg 1.75 s; identical output (ffprobe
+  h264+aac 144p). `yt-dlp --version` 0.93 s. Thumbnails: maxres WebP 132 KB vs
+  hqdefault 31 KB.
+- **Real window afterwards** (hidden, CDP):
+  - MP4 240p saved in 1.7 s on 3 runs (was 3.5 s); M4A 2.3 s (was 4.1 s);
+    WebM 1.7 s (was 3.5 s). All verified with ffprobe.
+  - Names: "(2)"/"(3)" only for the same type.
+  - Cancel at 4K: nothing kept, no processes, no leftover lookup files.
+  - History entries carry title, channel and thumbnail from the lookup.
+  - Card thumbnail 480 px.
+  - Fresh start, paste 0.27 s after load (before the version check
+    returned): lookup worked.
+
+**Where we landed:** merged into `main`, not pushed.
+
+**Next:** push, then the first Release run (v2.0.0).
+
 ### Session 2026-11-21/22 — v2: the desktop app
 **Goal:** turn Video Saver into a proper installable app. Owner: "lets stamp what
 we have as the old local PWA version. And make it a proper little app."
