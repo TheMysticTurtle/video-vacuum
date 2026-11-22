@@ -181,3 +181,31 @@ Seven changes, each measured or tested:
 6. **History saves borrow the list** instead of copying it.
 7. **The download folder is read once** for name picking and the cleanup snapshot.
 **Also:** the footer shows "…" (not "not found") until the version check returns.
+
+### D-24 ✅ "Dark studio" look + the owner's brand art (2026-11-22)
+**Decision:**
+- Adopt GPT's restyle: masthead, "New download" hero with film-reel art, a
+  header History button, and an "Engine ready" light. It follows the Windows
+  light/dark setting (owner: "maybe we should let it follow system
+  light/dark").
+- Use the owner's art from `media/` everywhere: app icons from
+  `VideoVacuumLogoLarge-Transparent.png`, the header from
+  `VideoVacuum-SkinnyBanner.png`, and the README / social preview / installer
+  header from `VideoVacuumBanner.png` (owner: "just banner is the banner we
+  use. the ALT is stored as an alternative"). The installer sidebar uses
+  `VideoVacuumLogoLarge.png`.
+**How:** `tools/make-brand-images.ps1` (built-in Windows imaging, nothing to
+install) makes every small copy from the originals. The originals stay out of
+git (`media/` is ignored, per the software standard's "no large media").
+Rerun the script, then `npx tauri icon`, whenever the art changes.
+**Consequence:**
+- The look is no longer "calm neutral" (D-09's look part is superseded by the
+  owner's own brand). D-09's no-platform-branding rule still holds: it's the
+  project's own art, not YouTube's.
+- GPT's version removed the trust line ("Runs on your computer…") and the
+  right-edge History tab. Both are kept out unless the owner wants them back.
+- The 16 px icon is a blur of the detailed logo; a simplified small icon is an option.
+- The banner's glow background is stored in fully transparent pixels. The
+  default output shows the logo on navy, and `-BannerGlow` keeps the glow. The
+  owner picks.
+**Supersedes:** the look in D-09.

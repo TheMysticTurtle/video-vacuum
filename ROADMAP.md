@@ -32,6 +32,11 @@ Nothing queued. The owner picks from the backlog.
 
 ## 5. Decisions waiting on the owner
 
+- **Banner look:** transparent (logo on navy, current) or keep the glow background (`tools/make-brand-images.ps1 -BannerGlow`)?
+- **Merge `feature/dark-studio`** (GPT's restyle + light/dark + brand images) into `main`?
+- **Upload `docs/images/social-preview.jpg`** in GitHub → Settings → Social preview (GitHub has no API for it).
+- Optional: a simplified 16 px icon (the detailed logo blurs at title-bar size).
+
 - Make the GitHub repo public?
 - LICENSE holder name: git name "TheMysticTestudine", GitHub "TheMysticTurtle", or a real name.
 

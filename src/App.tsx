@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { api, errorText, type DownloadEvent, type SettingsView, type ToolsStatus, type VideoInfo } from "./api";
 import DownloadStatus, { type DownloadState } from "./components/DownloadStatus";
 import HistoryDrawer from "./components/HistoryDrawer";
-import appIcon from "../src-tauri/icons/128x128.png";
+// The skinny banner, made from media/ by tools/make-brand-images.ps1.
+import headerBanner from "./assets/header-banner.png";
 import LinkBox from "./components/LinkBox";
 import SaveOptions, { type SaveChoices } from "./components/SaveOptions";
 import ToolsBanner from "./components/ToolsBanner";
@@ -154,7 +155,7 @@ export default function App() {
   return (
     <div className={historyOpen ? "layout drawer-open" : "layout"}>
       <header className="masthead">
-        <div className="brand"><img src={appIcon} alt="" />Video Vacuum</div>
+        <div className="brand"><img src={headerBanner} alt="Video Vacuum" /></div>
         <button type="button" className="secondary history-toggle" aria-expanded={historyOpen}
           aria-controls="download-history" onClick={() => setHistoryOpen(!historyOpen)}>
           <span aria-hidden="true">◷</span> History

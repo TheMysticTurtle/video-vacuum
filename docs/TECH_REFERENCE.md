@@ -142,3 +142,29 @@ gh workflow run release.yml -f draft=true   # save as a draft to review first
 
   To update one, look up the new release's commit SHA (`gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`).
 - **Cost:** private repos pay double for Windows minutes. It's one job, and Rust builds are cached.
+
+## 7. Brand images
+
+Originals live in `media/` (ignored by git). Every small copy is made by
+`tools/make-brand-images.ps1`, which uses only Windows' built-in System.Drawing:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\make-brand-images.ps1   # add -BannerGlow to keep the banner's glow background
+npx tauri icon src-tauri/icons/app-icon.png -o src-tauri/icons          # then delete the android/ ios/ Square*/StoreLogo/64x64 extras
+```
+
+| Output | From | Used by |
+|---|---|---|
+| `src-tauri/icons/*` (16-256 px .ico, .png, .icns) | LogoLarge-Transparent → 1024 px → `tauri icon` | window, taskbar, Start Menu, exe, installer icon |
+| `src/assets/header-banner.png` (406x88) | SkinnyBanner, trimmed to its artwork | masthead (shown 44 px tall) |
+| `docs/images/banner.jpg` (1280x480) | Banner | README |
+| `docs/images/social-preview.jpg` (1280x640) | Banner, top/bottom edges extended | GitHub Settings → Social preview (upload by hand; no API) |
+| `src-tauri/installer/header.bmp` (150x57) | Banner | NSIS `headerImage` |
+| `src-tauri/installer/sidebar.bmp` (164x314) | LogoLarge (dark tile) | NSIS `sidebarImage` |
+
+Gotchas:
+- **The art is AI-cut:** its "transparent" pixels still hold colors, and the
+  artwork is ~94-99% opaque rather than solid. Measured; it doesn't wash out.
+- **Old .NET's `Icon.ToBitmap` can't decode the PNG-compressed entries Tauri
+  writes into `.ico`.** It shows noise. To inspect an icon, read the ICO
+  directory and extract the embedded PNGs instead.

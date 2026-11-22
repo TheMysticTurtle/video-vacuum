@@ -1,4 +1,4 @@
-# Video Vacuum
+<h1 align="center"><img src="docs/images/banner.jpg" alt="Video Vacuum" width="720"></h1>
 
 A small Windows app for saving YouTube videos. Paste a link, pick a format,
 quality, name and folder, click **Download**.

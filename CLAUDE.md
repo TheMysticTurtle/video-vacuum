@@ -23,7 +23,8 @@ name and folder, download. It keeps a searchable History drawer. Open source
    source before adding one, and record it in `docs/TECH_REFERENCE.md`.
 5. Follow the owner's global working style (`~/.claude/CLAUDE.md`): confirm
    plans before acting, do only what's asked, best practice by default.
-6. **Calm look, no platform branding** (D-09).
+6. **The project's own brand, never YouTube's** (D-09, D-24). Brand images come from
+   `media/` via `tools/make-brand-images.ps1`; the look follows system light/dark.
 
 ## Current status
 

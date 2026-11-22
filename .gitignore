@@ -6,6 +6,15 @@ dist/
 src-tauri/target/
 src-tauri/gen/schemas/
 
+# Original full-size art (1-2 MB each). Only the small copies made by
+# tools/make-brand-images.ps1 are committed.
+media/
+# 1024 px icon source made from media/ by the same script (the generated icon sizes are committed)
+src-tauri/icons/app-icon.png
+
+# Other AI tools' separate working copies of this repo
+worktrees/
+
 # Partial downloads, if yt-dlp is ever run from this folder
 *.part
 *.ytdl
