@@ -9,7 +9,7 @@ A small Windows desktop app (Tauri 2 + React) that downloads YouTube videos
 with yt-dlp: paste a link, see the video's details, pick format, quality, file
 name and folder, download. It keeps a searchable History drawer. Open source
 (GPL-3.0-or-later), free, for people who'd rather not use a terminal. Repo:
-`TheMysticTurtle/video-saver` (private for now).
+`TheMysticTurtle/video-vacuum` (private for now; renamed from `video-saver` 2026-11-22).
 
 ## The golden rules for this project
 

@@ -149,3 +149,11 @@ YouTube's (D-09 holds).
 - Entries above D-21 keep the old name as history; D-18's data folder is now
   the `videovacuum` one.
 **Supersedes:** the name part of D-09.
+
+### D-22 ✅ GitHub repo renamed to `video-vacuum` (2026-11-22)
+**Decision:** `TheMysticTurtle/video-saver` → `TheMysticTurtle/video-vacuum`
+(still private). The local `origin` remote points to the new URL.
+**Why:** owner, 2026-11-22: "can we re-name the repo to Video Vacuum?" GitHub
+names can't contain spaces, so it's the dash form.
+**Consequence:** GitHub redirects the old URL. The local project folder is still `YoutubeVideoDownloader`.
+**Supersedes:** the repo-name note in D-21.

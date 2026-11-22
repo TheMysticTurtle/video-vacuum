@@ -9,7 +9,7 @@ Nothing is uploaded anywhere.
 ## Install
 
 1. Download `Video Vacuum_2.0.0_x64-setup.exe` from the
-   [Releases](https://github.com/TheMysticTurtle/video-saver/releases) page and run it.
+   [Releases](https://github.com/TheMysticTurtle/video-vacuum/releases) page and run it.
    - It installs just for you (no admin prompt) and adds Video Vacuum to the Start Menu.
    - The installer isn't code-signed yet, so Windows may show "Windows protected
      your PC". Click **More info → Run anyway**.
