@@ -18,12 +18,14 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 #[cfg(windows)]
 const CREATE_NEW_CONSOLE: u32 = 0x0000_0010;
 
-/// Full paths to the tools that were found.
+/// Full paths to the tools that were found (one folder scan finds all four).
 #[derive(Debug, Clone, Default)]
 pub struct Tools {
     pub ytdlp: Option<PathBuf>,
     pub ffmpeg: Option<PathBuf>,
     pub deno: Option<PathBuf>,
+    /// Windows' package manager, used to install and update the others.
+    pub winget: Option<PathBuf>,
 }
 
 /// What the page shows about the tools.
@@ -37,12 +39,15 @@ pub struct ToolsStatus {
 }
 
 impl Tools {
+    /// Fast (a registry read and a few file checks; no programs are started),
+    /// so it can run at startup before the window needs it.
     pub fn find() -> Self {
         let dirs = search_dirs();
         Tools {
             ytdlp: find_in(&dirs, "yt-dlp"),
             ffmpeg: find_in(&dirs, "ffmpeg"),
             deno: find_in(&dirs, "deno"),
+            winget: if cfg!(windows) { find_in(&dirs, "winget") } else { None },
         }
     }
 
@@ -59,7 +64,7 @@ impl Tools {
         ToolsStatus {
             ready: missing.is_empty(),
             ytdlp_version: self.ytdlp.as_ref().and_then(|_| self.ytdlp_version()),
-            can_install: cfg!(windows) && find_in(&search_dirs(), "winget").is_some(),
+            can_install: self.winget.is_some(),
             missing,
         }
     }
@@ -113,8 +118,8 @@ impl Tools {
     pub fn update_command(&self) -> Result<Command, String> {
         let ytdlp = self.ytdlp.as_ref().ok_or("yt-dlp isn't installed.")?;
         if installed_with_winget(ytdlp) {
-            let winget = find_in(&search_dirs(), "winget").ok_or("winget isn't available.")?;
-            let mut command = hidden_command(&winget);
+            let winget = self.winget.as_ref().ok_or("winget isn't available.")?;
+            let mut command = hidden_command(winget);
             command.args([
                 "upgrade",
                 "--id",
@@ -147,27 +152,29 @@ impl Tools {
         }
         packages
     }
-}
 
-/// Install missing tools with winget in a visible console window, so the user
-/// sees what's happening and answers winget's own prompts (we never accept
-/// agreements on their behalf). Blocks until winget finishes.
-pub fn install_with_winget(packages: &[&str]) -> Result<(), String> {
-    let winget = find_in(&search_dirs(), "winget")
-        .ok_or("winget isn't available on this PC. See the README for manual install steps.")?;
-    for package in packages {
-        let mut command = Command::new(&winget);
-        command.args(["install", "--id", package, "--exact"]);
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            command.creation_flags(CREATE_NEW_CONSOLE);
+    /// Install what's missing with winget in a visible console window, so the
+    /// user sees what's happening and answers winget's own prompts (we never
+    /// accept agreements on their behalf). Blocks until winget finishes.
+    pub fn install_missing(&self) -> Result<(), String> {
+        let winget = self
+            .winget
+            .as_ref()
+            .ok_or("winget isn't available on this PC. See the README for manual install steps.")?;
+        for package in self.packages_to_install() {
+            let mut command = Command::new(winget);
+            command.args(["install", "--id", package, "--exact"]);
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                command.creation_flags(CREATE_NEW_CONSOLE);
+            }
+            command
+                .status()
+                .map_err(|err| format!("Couldn't start winget: {err}"))?;
         }
-        command
-            .status()
-            .map_err(|err| format!("Couldn't start winget: {err}"))?;
+        Ok(())
     }
-    Ok(())
 }
 
 pub fn hidden_command(program: &Path) -> Command {

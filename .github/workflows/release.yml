@@ -107,6 +107,8 @@ jobs:
           releaseBody: |
             ## Install
 
+            **Requires Windows 10 or 11 (64-bit).**
+
             1. Download the **`…_x64-setup.exe`** file below and run it. It installs just for you, with no admin prompt, and adds Video Vacuum to the Start Menu.
             2. The installer isn't code-signed yet, so Windows may say **"Windows protected your PC"**. Click **More info → Run anyway**.
             3. The first time, if yt-dlp, ffmpeg or deno is missing, click **Install missing tools** in the app.

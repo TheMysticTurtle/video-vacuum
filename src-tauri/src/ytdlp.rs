@@ -6,6 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::time::{Duration, SystemTime};
 
 use crate::tools::Tools;
 
@@ -64,8 +65,26 @@ impl Format {
     }
 }
 
+/// A finished lookup: what the page shows, plus yt-dlp's full JSON so the
+/// download can reuse it (`--load-info-json`) instead of asking YouTube again.
+pub struct Lookup {
+    pub info: VideoInfo,
+    pub info_json: Vec<u8>,
+    pub fetched: SystemTime,
+}
+
+/// YouTube's stream links expire after a few hours; reuse a lookup only while
+/// it's well inside that.
+pub const LOOKUP_REUSE_LIMIT: Duration = Duration::from_secs(60 * 60);
+
+impl Lookup {
+    pub fn is_fresh(&self) -> bool {
+        self.fetched.elapsed().is_ok_and(|age| age < LOOKUP_REUSE_LIMIT) // clock went backwards = not fresh
+    }
+}
+
 /// Ask yt-dlp about a video. `-J` prints its info as JSON and downloads nothing.
-pub fn video_info(tools: &Tools, url: &str) -> Result<VideoInfo, String> {
+pub fn video_info(tools: &Tools, url: &str) -> Result<Lookup, String> {
     let mut args = tools.ytdlp_base_args();
     args.extend(["-J".into(), "--".into(), url.into()]);
     let output = tools.run_ytdlp(&args)?;
@@ -73,9 +92,26 @@ pub fn video_info(tools: &Tools, url: &str) -> Result<VideoInfo, String> {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(friendly_error(&stderr).message);
     }
-    let info: Value = serde_json::from_slice(&output.stdout)
+    let parsed: Value = serde_json::from_slice(&output.stdout)
         .map_err(|err| format!("yt-dlp returned something unexpected: {err}"))?;
-    Ok(parse_info(url, &info))
+    Ok(Lookup { info: parse_info(url, &parsed), info_json: output.stdout, fetched: SystemTime::now() })
+}
+
+/// The smallest thumbnail at least 400 px wide (sharp at 200 px on high-DPI
+/// screens). yt-dlp's own `thumbnail` is the biggest one, often a 1920×1080
+/// WebP of ~130 KB; the 480 px one is ~30 KB.
+fn pick_thumbnail(info: &Value) -> Option<String> {
+    const WANTED_WIDTH: u64 = 400;
+    let sized = info
+        .get("thumbnails")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|t| Some((t.get("width")?.as_u64()?, t.get("url")?.as_str()?)))
+        .filter(|(width, url)| *width >= WANTED_WIDTH && url.starts_with("https://"))
+        .min_by_key(|(width, _)| *width)
+        .map(|(_, url)| url.to_string());
+    sized.or_else(|| info.get("thumbnail").and_then(Value::as_str).map(str::to_string))
 }
 
 fn parse_info(url: &str, info: &Value) -> VideoInfo {
@@ -104,7 +140,7 @@ fn parse_info(url: &str, info: &Value) -> VideoInfo {
             .or_else(|| text("uploader"))
             .unwrap_or_else(|| "Unknown".into()),
         channel_url: text("channel_url").or_else(|| text("uploader_url")),
-        thumbnail: text("thumbnail"),
+        thumbnail: pick_thumbnail(info),
         duration_seconds: info.get("duration").and_then(Value::as_f64),
         upload_date: text("upload_date").and_then(|d| format_upload_date(&d)),
         view_count: info.get("view_count").and_then(Value::as_u64),
@@ -387,6 +423,23 @@ mod tests {
         assert_eq!(info.heights, vec![1080, 240]); // vertical 1080x1920 counts as 1080
         assert_eq!(info.suggested_file_name, "Me at the zoo");
         assert_eq!(info.duration_seconds, Some(19.0));
+        // No sized thumbnails listed: falls back to yt-dlp's own pick.
+        assert_eq!(info.thumbnail.as_deref(), Some("https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg"));
+    }
+
+    #[test]
+    fn thumbnail_is_the_smallest_sharp_one() {
+        let json = serde_json::json!({
+            "thumbnail": "https://i.ytimg.com/vi_webp/x/maxresdefault.webp",
+            "thumbnails": [
+                {"url": "https://i.ytimg.com/vi/x/mqdefault.jpg", "width": 320},
+                {"url": "https://i.ytimg.com/vi/x/hqdefault.jpg", "width": 480},
+                {"url": "https://i.ytimg.com/vi/x/hq720.jpg", "width": 1280},
+                {"url": "https://i.ytimg.com/vi_webp/x/maxresdefault.webp", "width": 1920},
+                {"url": "https://i.ytimg.com/vi/x/sd1.jpg"}
+            ]
+        });
+        assert_eq!(pick_thumbnail(&json).as_deref(), Some("https://i.ytimg.com/vi/x/hqdefault.jpg"));
     }
 
     #[test]

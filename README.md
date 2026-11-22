@@ -8,6 +8,10 @@ Nothing is uploaded anywhere.
 
 ## Install
 
+**Requires Windows 10 or 11** (64-bit). Windows 7 and 8.1 aren't supported:
+the window's browser engine (Microsoft WebView2), current Rust programs, and
+the tools it uses all need Windows 10 or newer.
+
 1. Download `Video Vacuum_2.0.0_x64-setup.exe` from the
    [Releases](https://github.com/TheMysticTurtle/video-vacuum/releases) page and run it.
    - It installs just for you (no admin prompt) and adds Video Vacuum to the Start Menu.

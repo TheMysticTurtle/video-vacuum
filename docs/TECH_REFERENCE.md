@@ -98,6 +98,13 @@ WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9223" \
 - **Cancel must end the process tree** (`taskkill /T /F`); yt-dlp starts ffmpeg (D-17).
 - **yt-dlp output is read as bytes** and decoded lossily per line; `--encoding utf-8` keeps titles intact.
 - **YouTube sometimes answers rapid repeated downloads with HTTP 403.** It's temporary; a retry ~20 s later worked. The app explains it in plain words.
+- **Don't let yt-dlp look a video up twice.** The paste-time `-J` JSON is
+  reused for the download with `--load-info-json <file>` (1.75 s vs 3.9 s, same
+  file). Its stream links expire after a few hours, so lookups older than
+  1 hour are redone from the link (D-23).
+- **Startup:** `Tools::find()` runs in `setup` (registry PATH read and file checks only).
+  The `yt-dlp --version` call (~0.9 s, a separate process) runs afterwards and
+  never gates lookups.
 - **`std::fs::rename` replaces an existing file on Windows**, which makes the temp-then-rename save atomic.
 - **WebView2 `prefers-color-scheme`** follows the Windows app theme, so light/dark needs no code.
 

@@ -49,15 +49,13 @@ export interface SettingsView {
   isCustom: boolean;
 }
 
+// Only the choices: the video itself is the one the app just looked up (Rust keeps it).
 export interface DownloadRequest {
-  url: string;
+  videoId: string;
   format: Format;
   height: number | null; // null = best available
   folder: string;
   fileName: string; // without extension
-  title: string;
-  channel: string;
-  thumbnail: string | null;
 }
 
 export type DownloadEvent =

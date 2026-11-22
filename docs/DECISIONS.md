@@ -157,3 +157,27 @@ YouTube's (D-09 holds).
 names can't contain spaces, so it's the dash form.
 **Consequence:** GitHub redirects the old URL. The local project folder is still `YoutubeVideoDownloader`.
 **Supersedes:** the repo-name note in D-21.
+
+### D-23 ✅ Efficiency pass: no repeated work (2026-11-22)
+**Decision:** owner, 2026-11-22: "make sure it's as efficient as it can be. not
+re-reading stuff it doesnt need to or duplicating calculations/data flows."
+Seven changes, each measured or tested:
+1. **Downloads reuse the lookup.** The `-J` JSON from pasting is written to a
+   temp file and passed as `--load-info-json`. A lookup older than 1 hour is
+   redone from the link, because YouTube's stream links expire after a few
+   hours. The temp file is removed when the download ends. Measured: MP4 240p
+   3.5 s → **1.7 s**, M4A 4.1 s → **2.3 s**, WebM 3.5 s → **1.7 s** (real
+   window, same video). Plain yt-dlp: 3.9 s → 1.75 s.
+2. **No video round trip.** The page sends only `{videoId, format, height,
+   folder, fileName}`. Rust keeps the lookup and builds history from it. A
+   mismatched or missing lookup is refused ("Look up the video again").
+3. **Right-sized thumbnails:** the smallest ≥ 400 px wide (sharp at 200 px on
+   high-DPI screens). Measured on a 4K video: 132 KB WebP → 31 KB JPEG.
+4. **Tools are found at startup** before the window opens (no program
+   started). The ~1 s `--version` check no longer gates lookups. Tested:
+   pasting 0.27 s after load, before the check returned, worked; before this
+   change it failed with "yt-dlp isn't installed."
+5. **One folder scan** finds yt-dlp, ffmpeg, deno and winget.
+6. **History saves borrow the list** instead of copying it.
+7. **The download folder is read once** for name picking and the cleanup snapshot.
+**Also:** the footer shows "…" (not "not found") until the version check returns.

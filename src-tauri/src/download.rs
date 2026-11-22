@@ -13,28 +13,28 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-use crate::link::clean_youtube_url;
+
 use crate::store::HistoryEntry;
 use crate::tools::{hidden_command, Tools};
 use crate::ytdlp::{
     escape_output_template, format_args, friendly_error, parse_line, progress_args, sanitize_file_name, Format, Line,
+    Lookup, VideoInfo,
 };
 
-/// What the page asks for.
+/// What the page asks for: only the choices. The video itself (link, title,
+/// thumbnail…) comes from the lookup the app already made, so nothing makes a
+/// round trip through the page.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadRequest {
-    pub url: String,
+    /// The looked-up video this is for (guards against a newer lookup in between).
+    pub video_id: String,
     pub format: Format,
     /// None = best available.
     pub height: Option<u32>,
     pub folder: String,
     /// Without extension; made safe and unique here.
     pub file_name: String,
-    // Shown in the history:
-    pub title: String,
-    pub channel: String,
-    pub thumbnail: Option<String>,
 }
 
 /// Messages sent to the page while a download runs (a Tauri Channel).
@@ -66,10 +66,21 @@ impl JobControl {
     }
 }
 
+/// Where yt-dlp gets the video from.
+#[derive(Debug)]
+enum Source {
+    /// The saved lookup (`--load-info-json`): no second trip to YouTube.
+    /// Measured 2026-11-22: 1.75 s instead of 3.9 s for a short video.
+    InfoJson(PathBuf),
+    /// A fresh lookup from the link, when the saved one is too old to trust.
+    Url(String),
+}
+
 /// A checked request, ready to run.
 #[derive(Debug)]
 pub struct Prepared {
-    pub url: String,
+    pub video: VideoInfo,
+    source: Source,
     pub folder: PathBuf,
     pub stem: String,
     /// Files starting with "stem." that were already there (lowercase), so a
@@ -77,55 +88,83 @@ pub struct Prepared {
     existing: HashSet<String>,
 }
 
-pub fn prepare(request: &DownloadRequest) -> Result<Prepared, String> {
-    let url = clean_youtube_url(&request.url).ok_or("That doesn't look like a YouTube video link.")?;
+impl Drop for Prepared {
+    /// The saved-lookup file is only needed for this one download.
+    fn drop(&mut self) {
+        if let Source::InfoJson(path) = &self.source {
+            let _ = fs::remove_file(path);
+        }
+    }
+}
+
+/// `lookup` is the app's latest lookup; `temp_dir` is where its JSON is written for yt-dlp.
+pub fn prepare(
+    request: &DownloadRequest,
+    lookup: Option<&Lookup>,
+    temp_dir: &Path,
+    job_id: &str,
+) -> Result<Prepared, String> {
+    let lookup = lookup
+        .filter(|lookup| lookup.info.id == request.video_id)
+        .ok_or("Look up the video again, then download.")?;
     let folder = PathBuf::from(request.folder.trim());
     if request.folder.trim().is_empty() || !folder.is_absolute() {
         return Err("Choose a folder to save into.".into());
     }
     fs::create_dir_all(&folder).map_err(|err| format!("Couldn't use {}: {err}", folder.display()))?;
-    let stem = unique_stem(&folder, &sanitize_file_name(&request.file_name), request.format.extensions());
-    let existing = files_with_stem(&folder, &stem);
-    Ok(Prepared { url, folder, stem, existing })
+
+    // Read the folder once; pick the name and take the cleanup snapshot from that.
+    let names = folder_names(&folder);
+    let stem = unique_stem(&names, &sanitize_file_name(&request.file_name), request.format.extensions());
+    let existing = with_stem(&names, &stem);
+
+    let source = if lookup.is_fresh() {
+        let path = temp_dir.join(format!("lookup-{job_id}.json"));
+        match fs::create_dir_all(temp_dir).and_then(|()| fs::write(&path, &lookup.info_json)) {
+            Ok(()) => Source::InfoJson(path),
+            Err(_) => Source::Url(lookup.info.url.clone()), // still works, just slower
+        }
+    } else {
+        Source::Url(lookup.info.url.clone())
+    };
+    Ok(Prepared { video: lookup.info.clone(), source, folder, stem, existing })
+}
+
+/// Lowercase names of everything in `folder`.
+fn folder_names(folder: &Path) -> HashSet<String> {
+    fs::read_dir(folder)
+        .map(|entries| entries.flatten().map(|e| e.file_name().to_string_lossy().to_lowercase()).collect())
+        .unwrap_or_default()
+}
+
+/// The names that start with "stem." (`names` are lowercase).
+fn with_stem(names: &HashSet<String>, stem: &str) -> HashSet<String> {
+    let prefix = format!("{}.", stem.to_lowercase());
+    names.iter().filter(|name| name.starts_with(&prefix)).cloned().collect()
 }
 
 /// Never overwrite: "name", then "name (2)", "name (3)"… A name is taken when
 /// a file of the same type (or a download still in progress) already uses it,
 /// so "Clip.mp4" and "Clip.m4a" can sit side by side.
-fn unique_stem(folder: &Path, base: &str, extensions: &[&str]) -> String {
+fn unique_stem(names: &HashSet<String>, base: &str, extensions: &[&str]) -> String {
     (1..)
         .map(|n| if n == 1 { base.to_string() } else { format!("{base} ({n})") })
-        .find(|stem| !stem_taken(folder, stem, extensions))
+        .find(|stem| !stem_taken(names, stem, extensions))
         .expect("an unused name always exists")
 }
 
-fn stem_taken(folder: &Path, stem: &str, extensions: &[&str]) -> bool {
-    extensions.iter().any(|ext| folder.join(format!("{stem}.{ext}")).exists())
-        || files_with_stem(folder, stem)
-            .iter()
-            .any(|name| name.ends_with(".part") || name.ends_with(".ytdl"))
-}
-
-/// Lowercase names of the files in `folder` that start with "stem.".
-fn files_with_stem(folder: &Path, stem: &str) -> HashSet<String> {
-    let prefix = format!("{}.", stem.to_lowercase());
-    fs::read_dir(folder)
-        .map(|entries| {
-            entries
-                .flatten()
-                .map(|entry| entry.file_name().to_string_lossy().to_lowercase())
-                .filter(|name| name.starts_with(&prefix))
-                .collect()
-        })
-        .unwrap_or_default()
+fn stem_taken(names: &HashSet<String>, stem: &str, extensions: &[&str]) -> bool {
+    let lower = stem.to_lowercase();
+    extensions.iter().any(|ext| names.contains(&format!("{lower}.{ext}")))
+        || with_stem(names, stem).iter().any(|name| name.ends_with(".part") || name.ends_with(".ytdl"))
 }
 
 /// After a cancel or failure, remove what this download created (partial
 /// `.part` / `.ytdl` / `.f137.mp4` files), and nothing that was there before.
-fn clean_up(prepared: &Prepared) {
-    for name in files_with_stem(&prepared.folder, &prepared.stem) {
-        if !prepared.existing.contains(&name) {
-            let _ = fs::remove_file(prepared.folder.join(&name));
+fn clean_up(folder: &Path, stem: &str, existing: &HashSet<String>) {
+    for name in with_stem(&folder_names(folder), stem) {
+        if !existing.contains(&name) {
+            let _ = fs::remove_file(folder.join(&name));
         }
     }
 }
@@ -156,9 +195,12 @@ pub fn run(
         .arg("-P")
         .arg(&prepared.folder)
         .arg("-o")
-        .arg(format!("{}.%(ext)s", escape_output_template(&prepared.stem)))
-        .arg("--")
-        .arg(&prepared.url)
+        .arg(format!("{}.%(ext)s", escape_output_template(&prepared.stem)));
+    match &prepared.source {
+        Source::InfoJson(path) => command.arg("--load-info-json").arg(path),
+        Source::Url(url) => command.arg("--").arg(url),
+    };
+    command
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -217,7 +259,7 @@ pub fn run(
     let _ = child.wait();
 
     if job.cancelled.load(Ordering::SeqCst) {
-        clean_up(prepared);
+        clean_up(&prepared.folder, &prepared.stem, &prepared.existing);
         send(DownloadEvent::Cancelled);
         return None;
     }
@@ -226,10 +268,10 @@ pub fn run(
         Some(path) => {
             let entry = HistoryEntry {
                 id: new_id(),
-                title: request.title.clone(),
-                video_url: prepared.url.clone(),
-                channel: request.channel.clone(),
-                thumbnail: request.thumbnail.clone(),
+                title: prepared.video.title.clone(),
+                video_url: prepared.video.url.clone(),
+                channel: prepared.video.channel.clone(),
+                thumbnail: prepared.video.thumbnail.clone(),
                 format: request.format.label().into(),
                 quality: if request.format.is_audio_only() {
                     "Audio".into()
@@ -243,7 +285,7 @@ pub fn run(
             Some(entry)
         }
         None => {
-            clean_up(prepared);
+            clean_up(&prepared.folder, &prepared.stem, &prepared.existing);
             let error = friendly_error(&other_output);
             send(DownloadEvent::Failed { message: error.message, detail: error.detail });
             None
@@ -281,39 +323,62 @@ pub fn new_id() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::{Duration, SystemTime};
+
+    fn temp(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("video-vacuum-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn lookup(id: &str, age: Duration) -> Lookup {
+        Lookup {
+            info: VideoInfo {
+                url: format!("https://www.youtube.com/watch?v={id}"),
+                id: id.into(),
+                title: "Me at the zoo".into(),
+                channel: "jawed".into(),
+                channel_url: None,
+                thumbnail: Some("https://i.ytimg.com/vi/x/hqdefault.jpg".into()),
+                duration_seconds: Some(19.0),
+                upload_date: None,
+                view_count: None,
+                description: String::new(),
+                heights: vec![240],
+                suggested_file_name: "Me at the zoo".into(),
+            },
+            info_json: br#"{"id": "jNQXAC9IVRw"}"#.to_vec(),
+            fetched: SystemTime::now() - age,
+        }
+    }
 
     #[test]
     fn names_are_never_reused_and_cleanup_only_touches_ours() {
-        let dir = std::env::temp_dir().join(format!("video-vacuum-names-{}", std::process::id()));
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).unwrap();
+        let dir = temp("names");
+        let taken = |base: &str, exts: &[&str]| unique_stem(&folder_names(&dir), base, exts);
 
         let mp4 = Format::Mp4.extensions();
-        assert_eq!(unique_stem(&dir, "Clip", mp4), "Clip");
+        assert_eq!(taken("Clip", mp4), "Clip");
         fs::write(dir.join("Clip.txt"), b"x").unwrap(); // not the same type: name still free
         fs::write(dir.join("Clip.m4a"), b"x").unwrap();
-        assert_eq!(unique_stem(&dir, "Clip", mp4), "Clip");
+        assert_eq!(taken("Clip", mp4), "Clip");
         fs::write(dir.join("Clip.mp4"), b"x").unwrap();
-        assert_eq!(unique_stem(&dir, "Clip", mp4), "Clip (2)");
+        assert_eq!(taken("Clip", mp4), "Clip (2)");
         fs::write(dir.join("clip (2).MP4"), b"x").unwrap(); // case-insensitive
-        assert_eq!(unique_stem(&dir, "Clip", mp4), "Clip (3)");
+        assert_eq!(taken("Clip", mp4), "Clip (3)");
         fs::write(dir.join("Clip (3).webm.part"), b"x").unwrap(); // another download in progress
-        assert_eq!(unique_stem(&dir, "Clip", mp4), "Clip (4)");
+        assert_eq!(taken("Clip", mp4), "Clip (4)");
         fs::write(dir.join("Clip.mkv"), b"x").unwrap(); // WebM may end up as .mkv
-        assert_eq!(unique_stem(&dir, "Clip", Format::Webm.extensions()), "Clip (2)");
+        assert_eq!(taken("Clip", Format::Webm.extensions()), "Clip (2)");
 
         // A download into "Notes" where "Notes.txt" already exists: cleanup keeps Notes.txt.
         fs::write(dir.join("Notes.txt"), b"x").unwrap();
-        let prepared = Prepared {
-            url: String::new(),
-            folder: dir.clone(),
-            stem: "Notes".into(),
-            existing: files_with_stem(&dir, "Notes"),
-        };
+        let existing = with_stem(&folder_names(&dir), "Notes");
         fs::write(dir.join("Notes.f137.mp4.part"), b"x").unwrap();
         fs::write(dir.join("Notes.ytdl"), b"x").unwrap();
         fs::write(dir.join("Notes (2).mp4"), b"x").unwrap(); // a different name: must survive
-        clean_up(&prepared);
+        clean_up(&dir, "Notes", &existing);
         let mut left: Vec<String> =
             fs::read_dir(&dir).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
         left.sort();
@@ -335,18 +400,45 @@ mod tests {
 
     #[test]
     fn requests_are_checked() {
+        let dir = temp("requests");
         let request = DownloadRequest {
-            url: "https://youtu.be/jNQXAC9IVRw?si=x".into(),
+            video_id: "jNQXAC9IVRw".into(),
             format: Format::Mp4,
             height: None,
-            folder: "relative/folder".into(),
+            folder: dir.display().to_string(),
             file_name: "x".into(),
-            title: "t".into(),
-            channel: "c".into(),
-            thumbnail: None,
         };
-        assert!(prepare(&request).is_err()); // folder must be absolute
-        let bad_link = DownloadRequest { url: "https://example.com".into(), ..request };
-        assert!(prepare(&bad_link).unwrap_err().contains("YouTube"));
+        let fresh = lookup("jNQXAC9IVRw", Duration::ZERO);
+        assert!(prepare(&request, None, &dir, "j1").unwrap_err().contains("Look up"));
+        let other = lookup("aqz-KE-bpKQ", Duration::ZERO);
+        assert!(prepare(&request, Some(&other), &dir, "j2").unwrap_err().contains("Look up"));
+        let relative = DownloadRequest { folder: "relative/folder".into(), ..request.clone() };
+        assert!(prepare(&relative, Some(&fresh), &dir, "j3").is_err());
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn fresh_lookups_are_reused_and_cleaned_up_stale_ones_are_not() {
+        let dir = temp("source");
+        let request = DownloadRequest {
+            video_id: "jNQXAC9IVRw".into(),
+            format: Format::Mp4,
+            height: None,
+            folder: dir.display().to_string(),
+            file_name: "x".into(),
+        };
+        let prepared = prepare(&request, Some(&lookup("jNQXAC9IVRw", Duration::ZERO)), &dir, "j1").unwrap();
+        let json_file = dir.join("lookup-j1.json");
+        assert!(matches!(&prepared.source, Source::InfoJson(path) if *path == json_file));
+        assert_eq!(fs::read(&json_file).unwrap(), br#"{"id": "jNQXAC9IVRw"}"#);
+        assert_eq!(prepared.video.title, "Me at the zoo"); // history comes from the lookup
+        drop(prepared);
+        assert!(!json_file.exists(), "the saved lookup is removed after the download");
+
+        let old = lookup("jNQXAC9IVRw", Duration::from_secs(2 * 60 * 60));
+        let prepared = prepare(&request, Some(&old), &dir, "j2").unwrap();
+        assert!(matches!(&prepared.source, Source::Url(url) if url.ends_with("jNQXAC9IVRw")));
+        drop(prepared);
+        let _ = fs::remove_dir_all(dir);
     }
 }
