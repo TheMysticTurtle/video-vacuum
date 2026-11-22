@@ -39,9 +39,16 @@ owner's art: icons, app header, installer, README/GitHub.
   shows the Alt banner with "New download" underneath, replacing GPT's film
   reel (D-25). Previewed at 1000x740 in light and dark, and at 720x600.
 
-**Where we landed:** `feature/dark-studio` merged into `main` (owner: "Merge it"), not pushed.
+- **Pushed and released:** the owner said "push it and start the
+  auto-release-build pipeline". Release run 45001774325 passed every step
+  (version guard, tsc, clippy, 16 tests, build, release) in 20 min.
+  Published [v2.0.0](https://github.com/TheMysticTurtle/video-vacuum/releases/tag/v2.0.0),
+  tag at `43db3d8`, installer `Video.Vacuum_2.0.0_x64-setup.exe` (2.56 MB;
+  GitHub turned the space into a dot, so the README now uses that name).
 
-**Next:** push, then the first Release run (v2.0.0).
+**Where we landed:** `main` merged, pushed and released as v2.0.0.
+
+**Next:** the owner tries the released installer; decide when the repo goes public.
 
 ### Session 2026-11-22 (later) — efficiency pass
 **Goal:** owner: "make sure it's as efficient as it can be. not re-reading stuff it doesnt need to or duplicating calculations/data flows." Approved: "Fix all seven".
