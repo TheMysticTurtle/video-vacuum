@@ -30,6 +30,8 @@ making it public.
 - [x] Restyle: dropped YouTube-red branding, renamed to **Video Saver**, added
       a one-line trust note under the title
 - [x] README, LICENSE (MIT), .gitignore, .gitattributes, git init
+- [x] Fixed (2026-11-21): on Windows a second copy shared port 8765 instead
+      of moving to 8766. The server now binds with `SO_EXCLUSIVEADDRUSE`.
 
 ### Next / ideas (not started — owner decides)
 - [x] Create the GitHub repo and push (private, 2026-10-25)
@@ -89,6 +91,7 @@ Browser page (web/)  ──fetch JSON──▶  app.py (127.0.0.1:8765)  ──s
 | No re-encoding | "Download what YouTube sends." ffmpeg only remuxes. M4A takes YouTube's AAC as-is. |
 | Progress via `--progress-template` with `@@` markers + JSON | Reliable parsing, no scraping of human-readable output. |
 | Update = `winget upgrade` when winget-installed | yt-dlp README: package-manager installs must update through that manager. Otherwise `-U` (which prints instructions for pip/brew). |
+| Exclusive port bind on Windows (`LocalServer`) | `http.server` turns on `SO_REUSEADDR`. On Windows that lets two sockets bind the same port, so the "next free port" fallback never triggered. `SO_EXCLUSIVEADDRUSE` (Microsoft Learn: "Using SO_REUSEADDR and SO_EXCLUSIVEADDRUSE") makes the second copy fail and move on. macOS/Linux keep `SO_REUSEADDR` for quick restarts. |
 | Polling instead of SSE/WebSockets | Simplest robust option. Twice a second on localhost costs nothing. |
 | `Start.bat` doesn't pass `--accept-*-agreements` to winget | The user accepts winget's prompts themselves. |
 | Name "Video Saver", no red | YouTube name + red looked like a sketchy clone site and borrows their branding. |
@@ -111,3 +114,12 @@ Browser page (web/)  ──fetch JSON──▶  app.py (127.0.0.1:8765)  ──s
     with "not recognized" because cmd doesn't see the folder. That's a test
     harness quirk, not a launcher bug.
 - Visual check in light and dark mode.
+
+**2026-11-21** (Windows 11, Python 3.14.4): port fix
+- Before (isolated test): two plain `ThreadingHTTPServer`s on 127.0.0.1:8799
+  both bound successfully.
+- After: started two copies of the app. Copy 1 listened on 8765 and copy 2 on
+  8766 (different PIDs), and both answered `/api/version`.
+- Regression: the security and API checks returned the same results as
+  before (200 page, 404 traversal, 403 for bad Host / cross-site / missing
+  Origin / form POST, 400 bad format, 200 valid info).
