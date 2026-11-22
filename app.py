@@ -28,6 +28,7 @@ import os
 import re
 import secrets
 import shutil
+import socket
 import subprocess
 import sys
 import threading
@@ -448,11 +449,29 @@ class Handler(BaseHTTPRequestHandler):
 
 # ─── Start ───────────────────────────────────────────────────────────────────
 
+class LocalServer(ThreadingHTTPServer):
+    """
+    ThreadingHTTPServer that never shares its port.
+
+    http.server turns on SO_REUSEADDR. On macOS/Linux that only allows a quick
+    restart, but on Windows it lets a second program bind the *same* port, so a
+    second copy of this app would never move on to the next free port.
+    SO_EXCLUSIVEADDRUSE (Windows only) keeps the port ours alone.
+    Ref: Microsoft Learn, "Using SO_REUSEADDR and SO_EXCLUSIVEADDRUSE".
+    """
+    allow_reuse_address = sys.platform != "win32"
+
+    def server_bind(self) -> None:
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def make_server() -> ThreadingHTTPServer:
     """Use the first free port from FIRST_PORT upward."""
     for port in range(FIRST_PORT, FIRST_PORT + PORT_ATTEMPTS):
         try:
-            return ThreadingHTTPServer((HOST, port), Handler)
+            return LocalServer((HOST, port), Handler)
         except OSError:
             continue
     sys.exit(f"No free port between {FIRST_PORT} and {FIRST_PORT + PORT_ATTEMPTS - 1}.")
