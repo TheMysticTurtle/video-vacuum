@@ -1,77 +1,77 @@
-# Video Saver
+# Video Vacuum
 
-A tiny, no-fuss app for saving YouTube videos. Paste a link, pick a format and
-quality, click **Download**.
+A small Windows app for saving YouTube videos. Paste a link, pick a format,
+quality, name and folder, click **Download**.
 
-It runs **on your own computer**. A small local server drives
-[yt-dlp](https://github.com/yt-dlp/yt-dlp) for you and shows a simple page in
-your browser. Nothing is uploaded anywhere, and nothing else on your network
-can reach it.
+It runs on your computer using [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+Nothing is uploaded anywhere.
 
-## Quick start
+## Install
 
-### Windows
+1. Download `Video Vacuum_2.0.0_x64-setup.exe` from the
+   [Releases](https://github.com/TheMysticTurtle/video-saver/releases) page and run it.
+   - It installs just for you (no admin prompt) and adds Video Vacuum to the Start Menu.
+   - The installer isn't code-signed yet, so Windows may show "Windows protected
+     your PC". Click **More info → Run anyway**.
+2. Open **Video Vacuum**. The first time, if the free tools it needs are missing
+   (yt-dlp, ffmpeg, deno), click **Install missing tools**. A winget window opens;
+   answer its questions there.
 
-1. Download this repo (**Code → Download ZIP**) and unzip it.
-2. Double-click **`Start.bat`**.
-   - If something is missing, it offers to install it with `winget`. Say **Y**,
-     then double-click `Start.bat` again when it finishes.
-3. Your browser opens the app. Keep the black window open while you use it.
-   Close that window to quit.
+## Use it
 
-### macOS / Linux
-
-```sh
-./start.sh
-```
-
-If something is missing, it prints the exact install command
-(macOS: `brew install python yt-dlp ffmpeg deno`).
-
-## Using it
-
-1. **Paste a YouTube link** into the box (or click **Paste**). Messy links are
-   fine. Tracking bits like `?si=…`, `&t=…` and `&list=…` are trimmed off, and
-   Shorts, `youtu.be` and mobile links all work.
-2. Check the video: thumbnail, title, creator (click to open their channel),
-   and the clean link with a **Copy link** button.
-3. Pick a **Format** and **Quality**, then click **Download**. Files go to
-   your **Downloads** folder. Click **Show in folder** when it's done.
+1. **Paste a YouTube link** (or click **Paste**). Messy links are fine: tracking
+   bits like `?si=` and `&t=` are trimmed, and Shorts, `youtu.be` and mobile links work.
+2. Check the video: thumbnail, title, creator, upload date, length, views and
+   the description. Click the title or creator to open them on YouTube.
+3. Pick a **Format**, **Quality**, **File name** and **Folder**, then **Download**.
+   You can cancel at any time; nothing half-finished is left behind.
+4. **History** (the tab on the right edge) lists everything you've downloaded,
+   with a search box. Files you've moved or deleted are greyed out. Click one
+   to see where it used to be. The **⚙** menu there sets your default download folder.
 
 | Format | What you get |
 |---|---|
-| **MP4** | Most compatible. H.264 video + AAC audio up to 1080p (above 1080p YouTube only offers VP9/AV1). |
-| **WebM** | VP9/AV1 video + Opus audio. |
-| **MKV** | The very best streams YouTube offers, kept exactly as-is. |
-| **M4A** | Audio only. |
+| **MP4** | Most compatible: H.264 video + AAC audio up to 1080p (above 1080p YouTube only offers VP9/AV1) |
+| **WebM** | VP9/AV1 video + Opus audio |
+| **MKV** | The very best streams YouTube offers, kept exactly as-is |
+| **M4A** | Audio only |
 
-Nothing is re-encoded. YouTube sends video and audio separately, and ffmpeg
-just packs them into one file, so there's no quality loss.
+Nothing is re-encoded: YouTube sends video and audio separately, and ffmpeg
+just packs them into one file.
 
-**Quality** lists only the resolutions that video actually has. "Best
-available" picks the highest one.
+**If downloads start failing,** YouTube probably changed something. Click
+**Update yt-dlp** at the bottom of the window.
 
-## Keeping it working
+## Build it yourself
 
-YouTube changes things often, which breaks downloads until yt-dlp catches up.
-If downloads start failing, click **Update yt-dlp** at the bottom of the page.
+You need Node.js, Rust (MSVC toolchain) and the WebView2 runtime (built into Windows 10/11).
 
-## What it needs
+```sh
+npm install
+npm run tauri dev     # run in development
+npm run tauri build   # make the installer in src-tauri/target/release/bundle/nsis/
+```
 
-| Tool | Why | Installed by |
-|---|---|---|
-| Python 3.9+ | runs the app (standard library only, no `pip install`) | `Start.bat` / your package manager |
-| yt-dlp | does the downloading | `winget install yt-dlp.yt-dlp` |
-| ffmpeg | joins video + audio | comes with the yt-dlp winget package |
-| deno | yt-dlp needs a JavaScript runtime for full YouTube support | comes with the yt-dlp winget package |
+See `docs/TECH_REFERENCE.md` for the details. The original browser-based
+version is kept at the git tag `v1.0.0-local-web`.
 
 ## Use it responsibly
 
-Only download videos you have the right to save, such as your own uploads,
-openly licensed videos, or content whose owner allows it. Follow YouTube's
-Terms of Service and your local copyright law. This project isn't affiliated
-with YouTube or Google.
+Only download videos you have the right to save: your own uploads, openly
+licensed videos, or content whose owner allows it. Follow YouTube's Terms of
+Service and your local copyright law. This project isn't affiliated with
+YouTube or Google.
 
 ## License
 
-[MIT](LICENSE)
+Copyright (C) 2026 TheMysticTestudine
+
+Video Vacuum is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. It comes with no warranty. See [LICENSE](LICENSE) for the full text.
+
+Versions up to `v1.0.0-local-web` were released under the MIT License.
+
+The tools Video Vacuum runs (yt-dlp, FFmpeg, Deno) are separate programs with
+their own licenses. Video Vacuum doesn't include them.

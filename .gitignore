@@ -1,6 +1,10 @@
-# Python
-__pycache__/
-*.py[cod]
+# Frontend
+node_modules/
+dist/
+
+# Rust / Tauri (build output and generated schemas)
+src-tauri/target/
+src-tauri/gen/schemas/
 
 # Partial downloads, if yt-dlp is ever run from this folder
 *.part
