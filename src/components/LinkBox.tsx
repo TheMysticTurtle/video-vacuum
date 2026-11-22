@@ -1,62 +1,66 @@
-// Step 1: paste a link. Pasting (or Enter, or the Paste button) looks it up.
+// Step 1: paste a link. The "New download" hero (the Alt banner) shows until a video is loaded.
+import heroBanner from "../assets/hero-banner.png";
 
 interface Props {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (value: string) => void;
   busy: boolean;
+  locked: boolean;
+  compact: boolean;
   message: string;
   isError: boolean;
 }
 
-export default function LinkBox({ value, onChange, onSubmit, busy, message, isError }: Props) {
+export default function LinkBox({ value, onChange, onSubmit, busy, locked, compact, message, isError }: Props) {
   async function pasteFromClipboard() {
     try {
       const text = await navigator.clipboard.readText();
-      onChange(text);
-      onSubmit(text);
+      if (text.trim()) {
+        onChange(text);
+        onSubmit(text);
+      } else {
+        document.getElementById("link")?.focus();
+      }
     } catch {
       document.getElementById("link")?.focus();
     }
   }
 
   return (
-    <section className="panel">
-      <label htmlFor="link" className="label">
-        Link
-      </label>
-      <div className="row">
-        <input
-          id="link"
-          type="text"
-          inputMode="url"
-          autoComplete="off"
-          spellCheck={false}
-          placeholder="Paste a YouTube link"
-          autoFocus
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onPaste={(e) => {
-            const text = e.clipboardData.getData("text");
-            if (text) {
-              e.preventDefault();
-              onChange(text);
-              onSubmit(text);
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") onSubmit(value);
-          }}
-        />
-        <button type="button" className="secondary" onClick={pasteFromClipboard} disabled={busy}>
-          Paste
-        </button>
-      </div>
-      {message && (
-        <p className={isError ? "message error" : "message"} role="status">
-          {message}
-        </p>
+    <section className={compact ? "source compact" : "source"}>
+      {!compact && (
+        <div className="hero">
+          <img className="hero-banner" src={heroBanner} alt="" aria-hidden="true" />
+          <div className="hero-copy">
+            <h1>New download</h1>
+            <p>Save a YouTube video or just its audio.</p>
+          </div>
+        </div>
       )}
+      <form className="source-form" onSubmit={(e) => { e.preventDefault(); if (!busy && !locked) onSubmit(value); }}>
+        <label htmlFor="link" className="label">Video link</label>
+        <div className="row">
+          <input id="link" type="text" inputMode="url" autoComplete="off" spellCheck={false}
+            placeholder="Paste a YouTube link" autoFocus value={value} disabled={locked}
+            onChange={(e) => onChange(e.target.value)}
+            onPaste={(e) => {
+              const text = e.clipboardData.getData("text");
+              if (text.trim()) {
+                e.preventDefault();
+                onChange(text);
+                onSubmit(text);
+              }
+            }}
+          />
+          {value.trim() && !compact ? (
+            <button type="submit" disabled={busy || locked}>{busy ? "Looking up…" : "Look up"}</button>
+          ) : (
+            <button type="button" onClick={pasteFromClipboard} disabled={busy || locked}>Paste link</button>
+          )}
+        </div>
+        {message && <p className={isError ? "message error" : "message"} role="status">{message}</p>}
+      </form>
     </section>
   );
 }

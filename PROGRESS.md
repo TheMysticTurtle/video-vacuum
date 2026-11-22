@@ -2,6 +2,47 @@
 
 Newest on top. Forward-looking items live in `ROADMAP.md`; the why lives in `docs/DECISIONS.md`.
 
+### Session 2026-11-22 (night) — GPT's restyle + brand art
+**Goal:** finish GPT's "dark studio" restyle (it ran out of usage before
+committing or launching), make it follow system light/dark, and wire in the
+owner's art: icons, app header, installer, README/GitHub.
+
+**What we did:**
+- Found GPT's work in a separate clone, `worktrees/dark-studio` (7 files, uncommitted).
+- Moved it into this repo on `feature/dark-studio` as GPT left it (`b6f33a7`),
+  then committed Claude's light/dark change on top (`2a1a2dc`).
+- Added `tools/make-brand-images.ps1` (built-in Windows imaging) and generated:
+  - icons
+  - header banner (406x88, 56 KB)
+  - README banner (122 KB)
+  - social preview (125 KB)
+  - installer header and sidebar bitmaps
+- Wired them into the masthead, NSIS (`installerIcon`, `headerImage`,
+  `sidebarImage`) and the README. `media/` and `worktrees/` are git-ignored.
+- D-24 records the look and the art.
+
+**Test results:**
+- clippy clean, 16 tests passed, tsc clean.
+- Installer built (2.0 MB). Silent install exit 0. The installed exe shows the
+  new logo icon.
+- The installed app's header banner loaded (406 px source, shown 44 px); light
+  and dark screenshots look right. Uninstall exit 0.
+
+**Surprises:**
+- The banner's glow background is stored in fully transparent pixels, so
+  there are two possible looks, and the owner picks.
+- The art is ~94-99% opaque, which was measured and is fine.
+- .NET's icon reader can't decode Tauri's PNG-in-ICO; extracting the PNGs
+  showed the icons are fine.
+
+- Owner picked the transparent banner ("no glow background"). The hero now
+  shows the Alt banner with "New download" underneath, replacing GPT's film
+  reel (D-25). Previewed at 1000x740 in light and dark, and at 720x600.
+
+**Where we landed:** `feature/dark-studio` merged into `main` (owner: "Merge it"), not pushed.
+
+**Next:** push, then the first Release run (v2.0.0).
+
 ### Session 2026-11-22 (later) — efficiency pass
 **Goal:** owner: "make sure it's as efficient as it can be. not re-reading stuff it doesnt need to or duplicating calculations/data flows." Approved: "Fix all seven".
 

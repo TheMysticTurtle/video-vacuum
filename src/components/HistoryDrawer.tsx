@@ -79,24 +79,15 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
   }
 
   return (
-    <aside className={open ? "drawer open" : "drawer"} aria-label="Download history">
-      <button type="button" className="drawer-tab" onClick={onToggle} aria-expanded={open}>
-        History
-      </button>
+    <aside id="download-history" className="drawer" hidden={!open} aria-label="Download history">
       {open && (
         <div className="drawer-body">
           <div className="drawer-head">
-            <h2>History</h2>
-            <button
-              type="button"
-              className="icon-button"
-              onClick={() => setShowSettings(!showSettings)}
-              aria-expanded={showSettings}
-              title="Settings"
-            >
-              ⚙
-            </button>
+            <h2>Download history</h2>
+            <button type="button" className="secondary" onClick={onToggle}>Close</button>
           </div>
+          <button type="button" className="link settings-toggle" onClick={() => setShowSettings(!showSettings)}
+            aria-expanded={showSettings}>Default folder</button>
 
           {showSettings && settings && (
             <div className="settings">

@@ -23,7 +23,8 @@ name and folder, download. It keeps a searchable History drawer. Open source
    source before adding one, and record it in `docs/TECH_REFERENCE.md`.
 5. Follow the owner's global working style (`~/.claude/CLAUDE.md`): confirm
    plans before acting, do only what's asked, best practice by default.
-6. **Calm look, no platform branding** (D-09).
+6. **The project's own brand, never YouTube's** (D-09, D-24). Brand images come from
+   `media/` via `tools/make-brand-images.ps1`; the look follows system light/dark.
 
 ## Current status
 
@@ -31,6 +32,7 @@ name and folder, download. It keeps a searchable History drawer. Open source
 - **Where we are (2026-11-22):** Video Vacuum v2.0.0 (desktop app, GPL-3.0) is
   built, tested, merged and pushed; releases come from the manual **Release**
   GitHub Actions workflow (`docs/TECH_REFERENCE.md` §6). Installer smoke-tested.
+  The dark-studio look (GPT, then Claude) with the owner's brand art is merged (D-24, D-25).
   v1 is kept as tag `v1.0.0-local-web`. Waiting on the first release run and the
   owner's walkthrough.
 
