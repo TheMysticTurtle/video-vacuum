@@ -1,0 +1,116 @@
+# Release Video Vacuum: check, test, build the Windows installer, publish a GitHub release.
+# Runs only when started by hand: Actions tab → "Release" → "Run workflow"
+# (or `gh workflow run release.yml`). The release tag is v<version> from
+# src-tauri/tauri.conf.json, so bump the version before each new release.
+#
+# Follows the Tauri guide (https://v2.tauri.app/distribute/pipelines/github/).
+# Actions are pinned to full commit SHAs, as GitHub's security hardening guide
+# recommends; the comment shows which release each SHA is.
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: "Save as a draft release (review it on GitHub before publishing)"
+        type: boolean
+        default: false
+
+# Only one release at a time.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+# Read-only by default; the job below asks for write access only because it publishes the release.
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Check, test, build and release
+    runs-on: windows-latest
+    permissions:
+      contents: write # create the tag and the release
+    steps:
+      - name: Get the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false # don't leave a token in .git/config for build scripts to find
+
+      - name: Make sure this version hasn't been released yet
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }} # read-only use: look up whether the tag exists
+        run: |
+          app=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          pkg=$(node -p "require('./package.json').version")
+          crate=$(grep -m1 '^version = ' src-tauri/Cargo.toml | cut -d '"' -f2)
+          echo "tauri.conf.json $app · package.json $pkg · Cargo.toml $crate"
+          if [ "$app" != "$pkg" ] || [ "$app" != "$crate" ]; then
+            echo "::error::The three version numbers don't match. Set them all to the same version."
+            exit 1
+          fi
+          # Ask the GitHub API (works for private repos). Only "Not Found" means the version is free;
+          # any other error stops the release rather than risk overwriting one.
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/v$app" --silent 2> lookup-error.txt; then
+            echo "::error::v$app is already released. Bump the version in tauri.conf.json, package.json and Cargo.toml first."
+            exit 1
+          elif ! grep -q "Not Found" lookup-error.txt; then
+            echo "::error::Couldn't check whether v$app exists:"; cat lookup-error.txt
+            exit 1
+          fi
+          echo "v$app is new. Releasing it."
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+          components: clippy
+
+      - name: Cache Rust builds
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend packages (exactly as locked)
+        run: npm ci
+
+      # ── The quality gate (same as CLAUDE.md) ──
+      - name: Type-check the UI
+        run: npm run check
+
+      - name: Lint the Rust code
+        working-directory: src-tauri
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Run the Rust tests
+        working-directory: src-tauri
+        run: cargo test
+
+      # ── Build the installer and publish it ──
+      - name: Build and release
+        uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__ # tauri-action fills in the app version
+          releaseName: Video Vacuum v__VERSION__
+          releaseDraft: ${{ inputs.draft }}
+          prerelease: false
+          releaseBody: |
+            ## Install
+
+            1. Download the **`…_x64-setup.exe`** file below and run it. It installs just for you, with no admin prompt, and adds Video Vacuum to the Start Menu.
+            2. The installer isn't code-signed yet, so Windows may say **"Windows protected your PC"**. Click **More info → Run anyway**.
+            3. The first time, if yt-dlp, ffmpeg or deno is missing, click **Install missing tools** in the app.
+
+            If downloads ever start failing, click **Update yt-dlp** at the bottom of the window.
+
+            Free software under the GNU GPL v3 or later. Not affiliated with YouTube or Google.

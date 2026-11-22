@@ -100,3 +100,38 @@ WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9223" \
 - **YouTube sometimes answers rapid repeated downloads with HTTP 403.** It's temporary; a retry ~20 s later worked. The app explains it in plain words.
 - **`std::fs::rename` replaces an existing file on Windows**, which makes the temp-then-rename save atomic.
 - **WebView2 `prefers-color-scheme`** follows the Windows app theme, so light/dark needs no code.
+
+## 6. Releasing (GitHub Actions)
+
+`.github/workflows/release.yml` runs **only when started by hand**: Actions tab
+→ **Release** → **Run workflow**, or:
+
+```sh
+gh workflow run release.yml                 # publish right away
+gh workflow run release.yml -f draft=true   # save as a draft to review first
+```
+
+1. **Version guard:** `tauri.conf.json`, `package.json` and `Cargo.toml` must
+   carry the same version, and `v<version>` must not exist yet. The check uses
+   the GitHub API with the read token, because the checkout keeps no
+   credentials. Only "Not Found" passes; any other error stops the run.
+   Tested locally: a new version passes, an existing tag stops it, a bad token stops it.
+2. **Quality gate:** `npm ci` → `npm run check` → `cargo clippy --all-targets -D warnings` → `cargo test`.
+3. **Build and release:** `tauri-apps/tauri-action` runs `tauri build`
+   (NSIS), creates the tag `v<version>` on the run's commit, and creates the
+   release "Video Vacuum v<version>" with the installer and install notes.
+
+- **To release a new version:** bump the version in all three files, commit, push, run the workflow.
+- **Security** (GitHub's "Security hardening for GitHub Actions"):
+  - every action is pinned to a full commit SHA, with the release in a comment
+  - the workflow's token is read-only, and only this job gets `contents: write`
+  - `persist-credentials: false` on checkout
+- **Pinned actions (2026-11-22):**
+  - `actions/checkout` v7.0.1
+  - `actions/setup-node` v7.1.0
+  - `dtolnay/rust-toolchain` stable
+  - `Swatinem/rust-cache` v2.9.3
+  - `tauri-apps/tauri-action` action-v1.0.0
+
+  To update one, look up the new release's commit SHA (`gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`).
+- **Cost:** private repos pay double for Windows minutes. It's one job, and Rust builds are cached.

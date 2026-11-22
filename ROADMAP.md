@@ -12,7 +12,9 @@
 |---|---|---|
 | `[x]` | **v2 desktop app, basic downloader** (owner 2026-11-21: "go ahead and make the basic downloader app as it is without the gif download"). D-11 to D-21; merged into `main` 2026-11-22 | built and tested |
 | `[?]` | **Owner's hands-on walkthrough** of the installed app | waiting on the owner |
-| `[?]` | **Push** `main`, the `v1.0.0-local-web` tag and v2 to GitHub (`git push --follow-tags`); attach the installer to a GitHub Release | waiting on the owner |
+| `[x]` | **Pushed** `main` + tag `v1.0.0-local-web` (2026-11-22) | done |
+| `[x]` | **Release workflow** `.github/workflows/release.yml` (owner 2026-11-22: "builds it. tests it. and makes a release when i run it manually") | done |
+| `[?]` | **First run** of the Release workflow → GitHub release v2.0.0 | waiting on the owner |
 
 ## 2. Next
 

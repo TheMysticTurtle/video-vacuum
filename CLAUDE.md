@@ -29,9 +29,10 @@ name and folder, download. It keeps a searchable History drawer. Open source
 
 - **Read `ROADMAP.md` first.** `PROGRESS.md` is the dated log; `docs/DECISIONS.md` has the why.
 - **Where we are (2026-11-22):** Video Vacuum v2.0.0 (desktop app, GPL-3.0) is
-  built, tested and merged into `main`; the installer was built and smoke-tested.
-  v1 is kept as tag `v1.0.0-local-web`. Waiting on the owner's walkthrough and
-  push (nothing pushed since v1).
+  built, tested, merged and pushed; releases come from the manual **Release**
+  GitHub Actions workflow (`docs/TECH_REFERENCE.md` §6). Installer smoke-tested.
+  v1 is kept as tag `v1.0.0-local-web`. Waiting on the first release run and the
+  owner's walkthrough.
 
 ## Documentation map
 

@@ -77,9 +77,18 @@ we have as the old local PWA version. And make it a proper little app."
   delete. The stale folder was renamed (`tauri.old-2026-07` in Claude's
   package cache), and Tauri fetched NSIS 3.13 itself.
 
-**Where we landed:** v2 merged into `main`; nothing pushed.
+- **GitHub repo renamed** to `video-vacuum` (D-22). **Pushed** `main` and tag `v1.0.0-local-web`.
+- **Release workflow** added: `.github/workflows/release.yml`, manual only. It
+  runs the version guard → quality gate → `tauri-action` build → release
+  (TECH_REFERENCE §6). Actions are pinned to SHAs. Found and fixed before
+  shipping: the first guard used `git ls-remote`, which would silently fail
+  against the private repo once the checkout drops its credentials. It now
+  uses the GitHub API and stops on any error except "Not Found". Guard tested
+  locally: new version passes, existing tag stops it, bad token stops it.
 
-**Next:** the owner's walkthrough of the installed app; then merge, push and a GitHub Release.
+**Where we landed:** v2 + the release workflow on `main`, pushed.
+
+**Next:** the first Release run (makes GitHub release v2.0.0) and the owner's walkthrough of the installed app.
 
 ### Session 2026-11-20 — vault notes
 - Filed the reusable knowledge from v1 in the Obsidian vault and found the

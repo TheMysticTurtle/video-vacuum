@@ -52,7 +52,8 @@ npm run tauri dev     # run in development
 npm run tauri build   # make the installer in src-tauri/target/release/bundle/nsis/
 ```
 
-See `docs/TECH_REFERENCE.md` for the details. The original browser-based
+See `docs/TECH_REFERENCE.md` for the details. Releases are built, tested and
+published by the **Release** GitHub Actions workflow, which is started by hand. The original browser-based
 version is kept at the git tag `v1.0.0-local-web`.
 
 ## Use it responsibly
