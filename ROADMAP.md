@@ -11,10 +11,13 @@
 | | What | State |
 |---|---|---|
 | `[x]` | **v2 desktop app, basic downloader** (owner 2026-11-21: "go ahead and make the basic downloader app as it is without the gif download"). D-11 to D-21; merged into `main` 2026-11-22 | built and tested |
-| `[?]` | **Owner's hands-on walkthrough** of the installed app | waiting on the owner |
 | `[x]` | **Pushed** `main` + tag `v1.0.0-local-web` (2026-11-22) | done |
 | `[x]` | **Release workflow** `.github/workflows/release.yml` (owner 2026-11-22: "builds it. tests it. and makes a release when i run it manually") | done |
 | `[x]` | **First release: v2.0.0** published 2026-11-22 by the Release workflow (run 45001774325, 20 min, every step passed); installer `Video.Vacuum_2.0.0_x64-setup.exe` 2.56 MB | done |
+| `[x]` | **Owner's hands-on walkthrough** of the released installer (owner 2026-11-22: "i already did the walkthrough") | done |
+| `[x]` | **Privacy statement** `PRIVACY.md` + README section (owner: "this thing doesnt collect any info right? do we have a privacy statement?") | done |
+| `[x]` | **Repo made public** 2026-11-22 (owner: "nah i want the repo to be public xD"), after rewriting commit emails to the GitHub noreply address (D-26) | done |
+| `[?]` | **SmartScreen "incorrect warning" report** for the installer link. Filled in 2026-11-22 except name, email, street address and the CAPTCHA, which only the owner can do; then Submit | waiting on the owner |
 
 ## 2. Next
 
@@ -24,18 +27,18 @@ Nothing queued. The owner picks from the backlog.
 
 - `[x]` v1.0.0 local web edition (2026-10-25, tag `v1.0.0-local-web`)
 - `[x]` v2.0.0 desktop app: paste, card, format/quality/name/folder, progress + cancel, History drawer with default folder and search, update button, tools check, installer
-- `[ ]` Public release (the owner decides when the repo goes public)
+- `[x]` Public release: v2.0.0 on GitHub, repo public (2026-11-22)
 
 ## 4. Polish checklist
 
-- `[ ]` Code signing, so Windows' "Windows protected your PC" warning goes away (costs money every year; the owner's call)
+- `[ ]` Code signing, so Windows' "Windows protected your PC" warning goes away (costs money every year; the owner's call). Without it, each new version starts with no SmartScreen reputation, and Windows 11 Smart App Control blocks it outright for people who have that turned on.
+- `[ ]` Optional: submit the installer itself to Microsoft Security Intelligence as a "Software developer" (the file-reputation route; the SmartScreen form above is the website route).
 
 ## 5. Decisions waiting on the owner
 
-- **Upload `docs/images/social-preview.jpg`** in GitHub → Settings → Social preview (GitHub has no API for it).
+- **Upload `docs/images/social-preview.jpg`** in GitHub → Settings → Social preview (GitHub has no API for it). Still the default image as of 2026-11-22.
+- **GitHub repo description** still says "A tiny local web UI for yt-dlp", which describes v1. Suggested: "Paste a YouTube link, pick format and quality, download. A small Windows app for yt-dlp; runs on your computer, nothing uploaded."
 - Optional: a simplified 16 px icon (the detailed logo blurs at title-bar size).
-
-- Make the GitHub repo public?
 - LICENSE holder name: git name "TheMysticTestudine", GitHub "TheMysticTurtle", or a real name.
 
 ## 6. Backlog (ideas not built now)

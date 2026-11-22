@@ -1,5 +1,5 @@
-// The History drawer on the right: a "History" tab opens it. Inside: a ⚙ menu
-// for the default download folder, a search box, and every past download.
+// The History drawer on the right: the masthead's "History" button opens it.
+// Inside: a "Default folder" setting, a search box, and every past download.
 // Files that were moved or deleted collapse and grey out; expanding one says
 // where it used to be.
 

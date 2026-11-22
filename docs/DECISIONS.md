@@ -1,4 +1,4 @@
-# Video Saver — Decisions
+# Video Vacuum — Decisions
 
 Every locked choice and why. A revisit is a new entry that supersedes the old
 one; entries are never silently edited. D-01 to D-10 come from v1 (the local
@@ -226,3 +226,26 @@ Rerun the script, then `npx tauri icon`, whenever the art changes.
 - The hero still hides once a video is loaded.
 - The hero image is ~516 KB; detailed glow art compresses poorly as PNG. It's
   local, with no network cost.
+
+### D-26 ✅ Public repo, a privacy statement, and noreply commit emails (2026-11-22)
+**Decision:**
+- `PRIVACY.md` states what the app does and doesn't send (it collects nothing),
+  and the README links it. Owner: "this thing doesnt collect any info right? do
+  we have a privacy statement?"
+- The GitHub repo is **public**. Owner: "nah i want the repo to be public xD".
+- Before it went public, every commit and tag was rewritten to use the GitHub
+  noreply address (`101545919+TheMysticTurtle@users.noreply.github.com`)
+  instead of the owner's personal email. Owner: "swap to githubs private
+  noreply address. i dont want weirdos pulling my email xD". Future commits
+  use it too: it's set in this repo's git config and globally on the dev PC.
+**How:** email-only rewrite with `git fast-export | swap script | git
+fast-import`, after a backup bundle (kept outside the repo). A check proved
+every ref's trees, dates, names, messages and parent counts were unchanged;
+then each ref was force-pushed with a lease on its old value. The v2.0.0
+release stayed attached to its tag. The old Actions run that pointed at the
+pre-rewrite commits was deleted before the repo went public.
+**Consequence:**
+- Every commit ID changed on 2026-11-22. Clones made before then need a fresh clone.
+- A public link was needed for Microsoft's SmartScreen "incorrect warning"
+  form; `PRIVACY.md` on GitHub is that link.
+**Supersedes:** "still private" in D-22.

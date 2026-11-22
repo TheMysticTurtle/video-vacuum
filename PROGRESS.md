@@ -1,6 +1,44 @@
-# Video Saver — Progress Log
+# Video Vacuum — Progress Log
 
 Newest on top. Forward-looking items live in `ROADMAP.md`; the why lives in `docs/DECISIONS.md`.
+
+### Session 2026-11-22 (late) — privacy, going public, docs refresh
+**Goal:** a privacy statement, make the repo public without exposing the
+owner's email, report SmartScreen's warning to Microsoft, and bring the docs
+up to date after the owner's walkthrough.
+
+**What we did:**
+- Fixed the installer file name in the README and status docs (`0fa4bea`, `8881aa7`).
+- Wrote `PRIVACY.md` from a code audit (collects nothing; what goes to
+  YouTube, winget and WebView2; what's stored locally and how to delete it),
+  plus a README Privacy section (`f7595a2`).
+- Rewrote every commit and tag email to the GitHub noreply address, verified
+  nothing else changed, force-pushed each ref with a lease, deleted the old
+  Actions run, then made the repo public (D-26). Git on this PC now commits
+  with the noreply address everywhere.
+- SmartScreen's "report an incorrect warning" form, filled in for the
+  installer's download link. The owner adds name, email and street address,
+  solves the CAPTCHA and submits.
+- The owner did the walkthrough of the released installer.
+- Docs refresh:
+  - ROADMAP brought up to date.
+  - README: the History button and "Default folder" replace the old right-edge
+    tab and ⚙ menu (D-24); "Paste link".
+  - TECH_REFERENCE: 16 tests, installer size, free Actions minutes now that the repo is public.
+  - CLAUDE.md status; D-26.
+  - "Video Vacuum" titles on PROGRESS and DECISIONS.
+
+**Test results:**
+- The rewrite check passed on every ref: identical trees, dates, names,
+  messages and parent counts, and no old email left.
+- `PRIVACY.md` on GitHub returns HTTP 200.
+- The v2.0.0 release and its installer are intact.
+- Docs refresh (docs plus one code comment): clippy `-D warnings` clean, `cargo test` 16 passed, `tsc` clean.
+
+**Where we landed:** v2.0.0 public, docs current.
+
+**Next:** the owner submits the SmartScreen form and uploads the social preview
+image; nothing else queued.
 
 ### Session 2026-11-22 (night) — GPT's restyle + brand art
 **Goal:** finish GPT's "dark studio" restyle (it ran out of usage before

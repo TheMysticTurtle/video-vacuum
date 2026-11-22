@@ -9,7 +9,7 @@ A small Windows desktop app (Tauri 2 + React) that downloads YouTube videos
 with yt-dlp: paste a link, see the video's details, pick format, quality, file
 name and folder, download. It keeps a searchable History drawer. Open source
 (GPL-3.0-or-later), free, for people who'd rather not use a terminal. Repo:
-`TheMysticTurtle/video-vacuum` (private for now; renamed from `video-saver` 2026-11-22).
+`TheMysticTurtle/video-vacuum` (public since 2026-11-22; renamed from `video-saver` the same day).
 
 ## The golden rules for this project
 
@@ -33,8 +33,12 @@ name and folder, download. It keeps a searchable History drawer. Open source
   built, tested, merged and pushed; releases come from the manual **Release**
   GitHub Actions workflow (`docs/TECH_REFERENCE.md` §6). Installer smoke-tested.
   The dark-studio look (GPT, then Claude) with the owner's brand art is merged (D-24, D-25).
-  **v2.0.0 is released** on GitHub (2026-11-22; the repo is still private). v1 is kept as
-  tag `v1.0.0-local-web`. Waiting on the owner's walkthrough of the released installer.
+  **v2.0.0 is released** on GitHub (2026-11-22) and the owner has walked through it.
+  The repo is **public**, with `PRIVACY.md` and every commit under the GitHub
+  noreply email (D-26). v1 is kept as tag `v1.0.0-local-web`. Nothing is queued;
+  the owner picks from the ROADMAP backlog.
+- **Commit email:** always `101545919+TheMysticTurtle@users.noreply.github.com`
+  (set in this repo's config and globally). Never commit with a personal email.
 
 ## Documentation map
 

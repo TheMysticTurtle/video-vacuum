@@ -24,15 +24,16 @@ the tools it uses all need Windows 10 or newer.
 
 ## Use it
 
-1. **Paste a YouTube link** (or click **Paste**). Messy links are fine: tracking
+1. **Paste a YouTube link** (or click **Paste link**). Messy links are fine: tracking
    bits like `?si=` and `&t=` are trimmed, and Shorts, `youtu.be` and mobile links work.
 2. Check the video: thumbnail, title, creator, upload date, length, views and
    the description. Click the title or creator to open them on YouTube.
 3. Pick a **Format**, **Quality**, **File name** and **Folder**, then **Download**.
    You can cancel at any time; nothing half-finished is left behind.
-4. **History** (the tab on the right edge) lists everything you've downloaded,
-   with a search box. Files you've moved or deleted are greyed out. Click one
-   to see where it used to be. The **⚙** menu there sets your default download folder.
+4. **History** (the button at the top) opens a panel listing everything you've
+   downloaded, with a search box. Files you've moved or deleted are greyed out.
+   Click one to see where it used to be. **Default folder** in that panel sets
+   where downloads go.
 
 | Format | What you get |
 |---|---|

@@ -43,7 +43,7 @@ npm run tauri dev      # development window with hot reload
 npm run tauri build    # src-tauri/target/release/bundle/nsis/Video Vacuum_<version>_x64-setup.exe
 ```
 
-- Release profile: LTO, `opt-level = "s"`, stripped. The exe is about 7 MB; the installer about 1.7 MB.
+- Release profile: LTO, `opt-level = "s"`, stripped. The exe is about 7 MB; the installer about 2.1 MB built locally, 2.56 MB from the Release workflow (v2.0.0; the brand art added ~0.4 MB).
 - The installer is NSIS, per user (`installMode: currentUser`), no admin prompt. WebView2 uses Tauri's default `downloadBootstrapper`.
 
 ## 3. Quality gate
@@ -53,7 +53,7 @@ cd src-tauri && cargo clippy --all-targets -- -D warnings && cargo test
 npm run check   # tsc --noEmit
 ```
 
-The Rust tests (14) cover:
+The Rust tests (16) cover:
 - link cleanup (12 good forms, 9 bad)
 - file-name safety
 - progress-line parsing
@@ -141,7 +141,7 @@ gh workflow run release.yml -f draft=true   # save as a draft to review first
   - `tauri-apps/tauri-action` action-v1.0.0
 
   To update one, look up the new release's commit SHA (`gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`).
-- **Cost:** private repos pay double for Windows minutes. It's one job, and Rust builds are cached.
+- **Cost:** free. The repo is public (D-26), and GitHub-hosted runners cost nothing on public repos. While it was private, Windows minutes counted double.
 - **First run (v2.0.0, 2026-11-22):** 20 minutes, mostly compiling Rust with a
   cold cache; later runs reuse the cache.
 - **GitHub renames assets with spaces:** `Video Vacuum_2.0.0_x64-setup.exe` is
