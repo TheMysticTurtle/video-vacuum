@@ -29,8 +29,7 @@ export default function ToolsBanner({ tools, installing, message, onInstall }: P
         </>
       ) : (
         <p className="muted small">
-          Install them from github.com/yt-dlp/yt-dlp (yt-dlp brings instructions for ffmpeg and deno), then restart Video
-          Saver.
+          Install them from github.com/yt-dlp/yt-dlp (yt-dlp brings instructions for ffmpeg and deno), then restart Video Vacuum.
         </p>
       )}
       {message && <p className="message error">{message}</p>}

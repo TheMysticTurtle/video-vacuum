@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, errorText, type DownloadEvent, type SettingsView, type ToolsStatus, type VideoInfo } from "./api";
 import DownloadStatus, { type DownloadState } from "./components/DownloadStatus";
 import HistoryDrawer from "./components/HistoryDrawer";
+import appIcon from "../src-tauri/icons/128x128.png";
 import LinkBox from "./components/LinkBox";
 import SaveOptions, { type SaveChoices } from "./components/SaveOptions";
 import ToolsBanner from "./components/ToolsBanner";
@@ -152,21 +153,32 @@ export default function App() {
 
   return (
     <div className={historyOpen ? "layout drawer-open" : "layout"}>
+      <header className="masthead">
+        <div className="brand"><img src={appIcon} alt="" />Video Vacuum</div>
+        <button type="button" className="secondary history-toggle" aria-expanded={historyOpen}
+          aria-controls="download-history" onClick={() => setHistoryOpen(!historyOpen)}>
+          <span aria-hidden="true">◷</span> History
+        </button>
+      </header>
       <main>
-        <header>
-          <h1>Video Vacuum</h1>
-          <p className="tagline">Runs on your computer using yt-dlp. Nothing is uploaded anywhere.</p>
-        </header>
-
+        {!tools && toolsMessage && <p className="message error" role="alert">{toolsMessage}</p>}
         {tools && !tools.ready && (
           <ToolsBanner tools={tools} installing={installing} message={toolsMessage} onInstall={install} />
         )}
 
         <LinkBox
+          compact={!!video}
           value={link}
-          onChange={setLink}
+          onChange={(text) => {
+            lookupId.current++;
+            setLink(text);
+            setVideo(null);
+            setDownload({ phase: "idle" });
+            setLookup({ busy: false, message: "", isError: false });
+          }}
           onSubmit={lookUp}
-          busy={lookup.busy || running}
+          busy={lookup.busy}
+          locked={running}
           message={lookup.message}
           isError={lookup.isError}
         />
@@ -184,6 +196,10 @@ export default function App() {
         <DownloadStatus state={download} onCancel={cancel} onAnother={another} />
 
         <footer>
+          <div className="engine">
+            <span className={tools?.ready ? "indicator ready" : "indicator"} />
+            <strong>{tools?.ready ? "Engine ready" : tools ? "Setup required" : toolsMessage ? "Engine unavailable" : "Checking tools…"}</strong>
+          </div>
           <span>
             yt-dlp {tools ? (tools.ytdlpVersion ?? "not found") : "…"}
             {tools?.ytdlpVersion && (

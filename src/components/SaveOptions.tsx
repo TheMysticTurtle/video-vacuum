@@ -70,7 +70,7 @@ export default function SaveOptions({ video, choices, onChange, onDownload, disa
           <div className="row">
             <input type="text" value={choices.folder} readOnly title={choices.folder} aria-label="Folder" />
             <button type="button" className="secondary" onClick={chooseFolder} disabled={disabled}>
-              Change…
+              Browse…
             </button>
           </div>
         </div>
