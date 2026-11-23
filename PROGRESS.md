@@ -79,10 +79,18 @@ Settings panel, theme choice and layout polish from their feedback.
   - With the bar, a loaded video still fits 960 px with no scrolling.
   - An exact repeat line (the tools check) is now skipped.
 
-**Where we landed:** on the feature branch, not merged. A new v2.1.0 installer
-is built for the owner.
+**Owner's verdict and the merge:**
+- The owner tested the installer: "it's beautiful! seems to work great. Go
+  ahead and update docs."
+- They added five demo images to `media/`. Because `media/` is git-ignored,
+  they were copied to `docs/images/screenshots/` (about 1 MB in total), and
+  the README's "Use it" became a step-by-step walkthrough with them.
+- Then "lets merge and push": merged `feature/history-privacy-mp3` into
+  `main` with `--no-ff` and pushed `main`.
 
-**Next:** the owner tests the installer; merge, push and release only after their OK.
+**Where we landed:** v2.1.0 on `main`, pushed, not released.
+
+**Next:** the owner runs the Release workflow for v2.1.0.
 
 ### Session 2026-11-22 (night) — history privacy, MP3, the author name
 **Goal:** owner: "there should be a clear button to just delete it all right

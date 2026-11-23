@@ -22,8 +22,10 @@
 | `[x]` | **MP3 with a chosen bitrate** (D-27): 128 / 192 / 256 / 320 kbps, 192 default | built and tested on `feature/history-privacy-mp3` |
 | `[x]` | **Author name is TheMysticTurtle** everywhere (D-29) | done |
 | `[x]` | **Bottom bar and diagnostic Log** (D-31): engine status, Update yt-dlp, Privacy Policy and GitHub pinned at the bottom; a Log panel docked above it (drag to resize), session-only or saved for 30 days; History panel re-laid out (search, then Keep/Clear on one row) | built and tested on `feature/history-privacy-mp3` |
-| `[?]` | **Owner tests the v2.1.0 installer**, then merge into `main` (owner: "do not auto merge branches into my stable main until I test it myself and tell you it's good"). Version already bumped on the branch | waiting on the owner |
-| `[ ]` | **Release v2.1.0**: push `main`, run the Release workflow | after the owner's OK |
+| `[x]` | **Owner tested the v2.1.0 installer** (2026-11-23: "it's beautiful! seems to work great") and asked to merge and push | done |
+| `[x]` | **README screenshots**: the owner's five demo images (start, video loaded, History, Settings, Log) in `docs/images/screenshots/`, with a step-by-step "Use it" | done |
+| `[x]` | **Merged into `main` and pushed** (2026-11-23) | done |
+| `[?]` | **Release v2.1.0**: run the Release workflow (the README on GitHub already describes 2.1.0) | waiting on the owner |
 | `[?]` | **SmartScreen "incorrect warning" report** for the installer link. Filled in 2026-11-22 except name, email, street address and the CAPTCHA, which only the owner can do; then Submit | waiting on the owner |
 
 ## 2. Next

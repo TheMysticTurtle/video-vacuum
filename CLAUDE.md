@@ -36,11 +36,12 @@ name and folder, download. It keeps a searchable History drawer. Open source
   **v2.0.0 is released** on GitHub (2026-11-22) and the owner has walked through it.
   The repo is **public**, with `PRIVACY.md` and every commit under the GitHub
   noreply email (D-26). v1 is kept as tag `v1.0.0-local-web`.
-  **v2.1.0 is on `feature/history-privacy-mp3`, NOT on `main`:** history
-  privacy controls (D-28), MP3 with a chosen bitrate (D-27), the author name
-  TheMysticTurtle (D-29), the Settings panel / theme / layout polish (D-30),
-  the bottom bar and the diagnostic Log (D-31).
-  Waiting on the owner to test the installer and OK the merge.
+  **v2.1.0 is merged into `main` and pushed (2026-11-23), not yet released:**
+  history privacy controls (D-28), MP3 with a chosen bitrate (D-27), the
+  author name TheMysticTurtle (D-29), the Settings panel / theme / layout
+  polish (D-30), the bottom bar and the diagnostic Log (D-31), and README
+  screenshots. The owner tested the installer ("it's beautiful! seems to work
+  great"). Next: the owner runs the Release workflow for v2.1.0.
 - **Author:** always `TheMysticTurtle <101545919+TheMysticTurtle@users.noreply.github.com>`
   (repo config and global), in commits, copyright lines and credits. Never
   "TheMysticTestudine" (another account) and never a personal email.

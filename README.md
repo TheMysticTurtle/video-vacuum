@@ -6,6 +6,8 @@ quality, name and folder, click **Download**.
 It runs on your computer using [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 Nothing is uploaded anywhere.
 
+<p align="center"><img src="docs/images/screenshots/video-loaded.png" alt="Video Vacuum with a video looked up: thumbnail, title and creator, then format, quality, file name and folder" width="640"></p>
+
 ## Install
 
 **Requires Windows 10 or 11** (64-bit). Windows 7 and 8.1 aren't supported:
@@ -24,21 +26,56 @@ the tools it uses all need Windows 10 or newer.
 
 ## Use it
 
-1. **Paste a YouTube link** (or click **Paste link**). Messy links are fine: tracking
-   bits like `?si=` and `&t=` are trimmed, and Shorts, `youtu.be` and mobile links work.
-2. Check the video: thumbnail, title, creator, upload date, length, views and
-   the description. Click the title or creator to open them on YouTube.
-3. Pick a **Format**, **Quality**, **File name** and **Folder**, then **Download**.
-   You can cancel at any time; nothing half-finished is left behind.
-4. **History** (the button at the top) opens a panel listing everything you've
-   downloaded, with a search box. **Keep download history** and
-   **Clear history…** sit right above the list. Files you've moved or deleted
-   are greyed out; click one to see where it used to be. **Remove** takes one
-   entry off the list. Removing or clearing history never deletes your
-   downloaded files.
-5. **Settings** (next to History) sets your default download folder, the
-   **Theme** (System, Light or Dark; System follows Windows), and has the same
-   history controls.
+### 1. Paste a link
+
+Paste a YouTube link (or click **Paste link**). Messy links are fine: tracking
+bits like `?si=` and `&t=` are trimmed, and Shorts, `youtu.be` and mobile links work.
+
+<p align="center"><img src="docs/images/screenshots/start.png" alt="The start screen: the Video Vacuum banner and a box to paste a YouTube link" width="560"></p>
+
+### 2. Check the video and pick how to save it
+
+You'll see the thumbnail, title, creator, upload date, length and views.
+**Show description** opens the description. Click the title or creator to open
+them on YouTube.
+
+Pick a **Format**, **Quality**, **File name** and **Folder**, then **Download**.
+You can cancel at any time; nothing half-finished is left behind.
+
+### 3. History
+
+**History** (top right) lists everything you've downloaded, with a search box.
+- **Keep download history** turns recording on or off.
+- **Clear history** empties the list (it asks first).
+- **Remove** takes one entry off.
+- Files you've moved or deleted are greyed out; click one to see where it used to be.
+- Removing or clearing history never deletes your downloaded files.
+
+<p align="center"><img src="docs/images/screenshots/history.png" alt="The History panel: search box, Keep download history and Clear history, and past downloads with Open, Show in folder and Remove" width="560"></p>
+
+### 4. Settings
+
+**Settings** (next to History) has:
+- your default download folder
+- the **Theme**: System, Light or Dark (System follows Windows)
+- the same history controls
+- **Save logs to disk**
+
+<p align="center"><img src="docs/images/screenshots/settings.png" alt="The Settings panel: default download folder, theme, history and log options" width="560"></p>
+
+### 5. The Log
+
+Click **Log** in the bar at the bottom to watch what the app is doing, step by
+step. When something goes wrong, yt-dlp's own words appear under the error.
+- You can keep using the app while it's open.
+- Drag its top edge to resize it.
+- **Copy** puts the whole log on the clipboard, for a bug report.
+- The log is kept for the session only, unless you turn on
+  **Settings → Save logs to disk** (kept 30 days).
+
+<p align="center"><img src="docs/images/screenshots/log.png" alt="The Log panel docked at the bottom, listing each step of a download" width="560"></p>
+
+### Formats
 
 | Format | What you get |
 |---|---|
@@ -56,14 +93,8 @@ most listeners, and 320 kbps adds extra margin at about two-thirds more file
 size. Pick M4A for the original.
 
 **If downloads start failing,** YouTube probably changed something. Click
-**Update yt-dlp** in the bar at the bottom of the window.
-
-**Want to see what it's doing?** Click **Log** in the bottom bar. A panel opens
-above the bar and shows each step as it happens, with yt-dlp's own words when
-something goes wrong. You can keep using the app while it's open. Drag its top
-edge to resize it. **Copy** puts the whole log on the clipboard, for a bug
-report. The log is kept for the session only, unless you turn on
-**Settings → Save logs to disk** (kept 30 days).
+**Update yt-dlp** in the bar at the bottom of the window, and check the **Log**
+for what yt-dlp said.
 
 ## Build it yourself
 

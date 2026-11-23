@@ -170,7 +170,22 @@ gh workflow run release.yml -f draft=true   # save as a draft to review first
 - **GitHub renames assets with spaces:** `Video Vacuum_2.0.0_x64-setup.exe` is
   published as `Video.Vacuum_2.0.0_x64-setup.exe`. Refer to the dotted name in docs.
 
-## 7. Brand images
+## 7. Brand images and screenshots
+
+**README screenshots** (`docs/images/screenshots/*.png`) are the owner's own
+demo captures, copied by hand from `media/` (which git ignores):
+
+| File | From `media/` |
+|---|---|
+| `start.png` | `Starting-Screen-Demo.png` |
+| `video-loaded.png` | `Video-Loaded-Demo.png` |
+| `history.png` | `History-Demo.png` |
+| `settings.png` | `Settings-Demo.png` |
+| `log.png` | `Log-Demo.png` |
+
+Retake them when the window changes noticeably.
+
+**Brand images:**
 
 Originals live in `media/` (ignored by git). Every small copy is made by
 `tools/make-brand-images.ps1`, which uses only Windows' built-in System.Drawing:
