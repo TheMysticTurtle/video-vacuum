@@ -71,6 +71,8 @@ name and folder, download. It keeps a searchable History drawer. Open source
 - **Quality gate** before every commit: `cargo clippy --all-targets -- -D warnings`
   + `cargo test` (in `src-tauri/`) + `npm run check`. Real downloads through the
   real window are the main proof (see `docs/TECH_REFERENCE.md`, "Testing").
-- **Git:** one `feature/<name>` branch per build; merge to `main` with `--no-ff`
-  only when tested. Commits: WHY / WHAT / TEST RESULTS. **Claude commits; the owner pushes.**
+- **Git:** one `feature/<name>` branch per build. **Never merge into `main`
+  until the owner has tried the build themselves and said it's good**
+  (owner, 2026-11-23: "do not auto merge branches into my stable main until I
+  test it myself and tell you it's good"). Then merge with `--no-ff`. Commits: WHY / WHAT / TEST RESULTS. **Claude commits; the owner pushes.**
 - **Test windows stay off the owner's screen** (hidden window + CDP; see the tech reference).
