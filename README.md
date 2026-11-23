@@ -8,6 +8,30 @@ Nothing is uploaded anywhere.
 
 <p align="center"><img src="docs/images/screenshots/video-loaded.png" alt="Video Vacuum with a video looked up: thumbnail, title and creator, then format, quality, file name and folder" width="640"></p>
 
+## Use it responsibly
+
+Only download videos you have the right to save: your own uploads, openly
+licensed videos, or content whose owner allows it. Follow YouTube's Terms of
+Service and your local copyright law. This project isn't affiliated with
+YouTube or Google.
+
+### Windows may warn you about the installer
+
+This is expected. The installer isn't code-signed (a signing certificate costs
+money every year), and every new release starts with no download history, so
+Microsoft Defender SmartScreen may show **"Windows protected your PC"**. On
+Windows 11, **Smart App Control** (if you've turned it on) may block it outright.
+
+- **Where releases come from:** every release is built by the **Release**
+  workflow on GitHub Actions, straight from the code in this public repository,
+  not on anyone's own computer. The steps are in
+  [`.github/workflows/release.yml`](.github/workflows/release.yml). From v2.1.0
+  on, each release's build is listed in the repository's **Actions** tab.
+- **If you're curious or concerned,** read the code here before you install, or
+  ask your favorite AI to review the repository for you. Everything the app
+  sends anywhere is listed in [PRIVACY.md](PRIVACY.md).
+- **To run it anyway:** click **More info → Run anyway**.
+
 ## Install
 
 **Requires Windows 10 or 11** (64-bit). Windows 7 and 8.1 aren't supported:
@@ -18,8 +42,9 @@ the tools it uses all need Windows 10 or newer.
    `Video.Vacuum_2.0.0_x64-setup.exe`) from the
    [Releases](https://github.com/TheMysticTurtle/video-vacuum/releases) page and run it.
    - It installs just for you (no admin prompt) and adds Video Vacuum to the Start Menu.
-   - The installer isn't code-signed yet, so Windows may show "Windows protected
-     your PC". Click **More info → Run anyway**.
+   - Windows may show "Windows protected your PC" because the installer isn't
+     code-signed: click **More info → Run anyway**. See
+     [Windows may warn you about the installer](#windows-may-warn-you-about-the-installer).
 2. Open **Video Vacuum**. The first time, if the free tools it needs are missing
    (yt-dlp, ffmpeg, deno), click **Install missing tools**. A winget window opens;
    answer its questions there.
@@ -117,13 +142,6 @@ server of its own. It only talks to YouTube (through yt-dlp) when you look up
 or download a video, and keeps your history on your own computer. Details,
 including how to delete that history: [PRIVACY.md](PRIVACY.md).
 
-## Use it responsibly
-
-Only download videos you have the right to save: your own uploads, openly
-licensed videos, or content whose owner allows it. Follow YouTube's Terms of
-Service and your local copyright law. This project isn't affiliated with
-YouTube or Google.
-
 ## License
 
 Copyright (C) 2026 TheMysticTurtle
@@ -137,3 +155,12 @@ Versions up to `v1.0.0-local-web` were released under the MIT License.
 
 The tools Video Vacuum runs (yt-dlp, FFmpeg, Deno) are separate programs with
 their own licenses. Video Vacuum doesn't include them.
+
+## Credits
+
+The video in the screenshots is **"Me at the zoo"** by **jawed** (Jawed Karim,
+one of YouTube's co-founders). It was the first video ever uploaded to YouTube,
+on April 23, 2005, and it appears here as a tribute to him as a pioneer and to
+YouTube's beginnings. The video, its title and its thumbnail belong to their
+creator. They're shown only to demonstrate the app, and Video Vacuum isn't
+affiliated with or endorsed by him or YouTube.
