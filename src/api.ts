@@ -3,7 +3,11 @@
 
 import { Channel, invoke } from "@tauri-apps/api/core";
 
-export type Format = "mp4" | "webm" | "mkv" | "m4a";
+export type Format = "mp4" | "webm" | "mkv" | "m4a" | "mp3";
+
+/** MP3 bitrates in kbit/s; must match MP3_BITRATES in src-tauri/src/ytdlp.rs. */
+export const MP3_BITRATES = [128, 192, 256, 320] as const;
+export const MP3_DEFAULT_KBPS = 192;
 
 export interface ToolsStatus {
   ready: boolean;
@@ -47,13 +51,28 @@ export interface HistoryItem extends HistoryEntry {
 export interface SettingsView {
   defaultFolder: string;
   isCustom: boolean;
+  keepHistory: boolean; // false = new downloads aren't added to history
+  theme: Theme;
+  saveLog: boolean; // true = the diagnostic log is also saved to disk (D-31)
 }
+
+/** One line of the diagnostic log (D-31). */
+export interface LogLine {
+  atMs: number; // milliseconds since 1970
+  level: "info" | "warn" | "error";
+  text: string;
+  detail: string | null; // yt-dlp's own words or other technical detail
+}
+
+/** "system" follows Windows. Saved in settings.json (D-30). */
+export type Theme = "system" | "light" | "dark";
 
 // Only the choices: the video itself is the one the app just looked up (Rust keeps it).
 export interface DownloadRequest {
   videoId: string;
   format: Format;
   height: number | null; // null = best available
+  mp3Kbps: number | null; // MP3 only; null = the default
   folder: string;
   fileName: string; // without extension
 }
@@ -78,11 +97,21 @@ export const api = {
   },
   cancelDownload: (jobId: string) => invoke<void>("cancel_download", { jobId }),
   listHistory: () => invoke<HistoryItem[]>("list_history"),
+  removeHistoryEntry: (id: string) => invoke<void>("remove_history_entry", { id }),
+  clearHistory: () => invoke<void>("clear_history"),
   openFile: (id: string) => invoke<void>("open_file", { id }),
   showInFolder: (id: string) => invoke<void>("show_in_folder", { id }),
   openLink: (url: string) => invoke<void>("open_link", { url }),
+  openProjectPage: (page: "github" | "privacy") => invoke<void>("open_project_page", { page }),
   getSettings: () => invoke<SettingsView>("get_settings"),
   setDefaultFolder: (folder: string | null) => invoke<SettingsView>("set_default_folder", { folder }),
+  setKeepHistory: (keep: boolean) => invoke<SettingsView>("set_keep_history", { keep }),
+  setTheme: (theme: Theme) => invoke<SettingsView>("set_theme", { theme }),
+  getActivity: () => invoke<LogLine[]>("get_activity"),
+  clearActivity: () => invoke<void>("clear_activity"),
+  setSaveLog: (save: boolean) => invoke<SettingsView>("set_save_log", { save }),
+  openLogFolder: () => invoke<void>("open_log_folder"),
+  deleteSavedLogs: () => invoke<number>("delete_saved_logs"),
 };
 
 /** Commands reject with a plain string message. */

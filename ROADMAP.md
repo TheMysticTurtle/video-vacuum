@@ -17,6 +17,15 @@
 | `[x]` | **Owner's hands-on walkthrough** of the released installer (owner 2026-11-22: "i already did the walkthrough") | done |
 | `[x]` | **Privacy statement** `PRIVACY.md` + README section (owner: "this thing doesnt collect any info right? do we have a privacy statement?") | done |
 | `[x]` | **Repo made public** 2026-11-22 (owner: "nah i want the repo to be public xD"), after rewriting commit emails to the GitHub noreply address (D-26) | done |
+| `[x]` | **History privacy** (D-28): Clear history (asks first), Keep history on/off, Remove per entry | built and tested on `feature/history-privacy-mp3` |
+| `[x]` | **Settings panel and layout polish** (D-30): Settings button with folder, theme (System / Light / Dark) and history controls; history controls also above the History list; bigger section titles; bordered description with an arrow toggle; 1000 x 960 window that shrinks to fit small screens | built and tested on `feature/history-privacy-mp3` |
+| `[x]` | **MP3 with a chosen bitrate** (D-27): 128 / 192 / 256 / 320 kbps, 192 default | built and tested on `feature/history-privacy-mp3` |
+| `[x]` | **Author name is TheMysticTurtle** everywhere (D-29) | done |
+| `[x]` | **Bottom bar and diagnostic Log** (D-31): engine status, Update yt-dlp, Privacy Policy and GitHub pinned at the bottom; a Log panel docked above it (drag to resize), session-only or saved for 30 days; History panel re-laid out (search, then Keep/Clear on one row) | built and tested on `feature/history-privacy-mp3` |
+| `[x]` | **Owner tested the v2.1.0 installer** (2026-11-23: "it's beautiful! seems to work great") and asked to merge and push | done |
+| `[x]` | **README screenshots**: the owner's five demo images (start, video loaded, History, Settings, Log) in `docs/images/screenshots/`, with a step-by-step "Use it" | done |
+| `[x]` | **Merged into `main` and pushed** (2026-11-23) | done |
+| `[?]` | **Release v2.1.0**: run the Release workflow (the README on GitHub already describes 2.1.0) | waiting on the owner |
 | `[?]` | **SmartScreen "incorrect warning" report** for the installer link. Filled in 2026-11-22 except name, email, street address and the CAPTCHA, which only the owner can do; then Submit | waiting on the owner |
 
 ## 2. Next
@@ -39,7 +48,6 @@ Nothing queued. The owner picks from the backlog.
 - **Upload `docs/images/social-preview.jpg`** in GitHub → Settings → Social preview (GitHub has no API for it). Still the default image as of 2026-11-22.
 - **GitHub repo description** still says "A tiny local web UI for yt-dlp", which describes v1. Suggested: "Paste a YouTube link, pick format and quality, download. A small Windows app for yt-dlp; runs on your computer, nothing uploaded."
 - Optional: a simplified 16 px icon (the detailed logo blurs at title-bar size).
-- LICENSE holder name: git name "TheMysticTestudine", GitHub "TheMysticTurtle", or a real name.
 
 ## 6. Backlog (ideas not built now)
 
@@ -56,3 +64,5 @@ Nothing queued. The owner picks from the backlog.
 - **"Send to Video Vacuum" browser extension** that only passes the current tab's link to the app (no downloading in the extension).
 - Playlist support (left out on purpose to keep it simple).
 - Offer a YouTube link already on the clipboard when the window opens.
+- **Updates from inside the app** with Tauri's official updater plugin (signed with its own free key, not a paid certificate). Today a new version is installed by downloading the installer again; history and settings are kept.
+- Clear the window's cached thumbnails along with Clear history (needs a check of Tauri's API first).

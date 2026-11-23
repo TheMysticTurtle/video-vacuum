@@ -1,7 +1,7 @@
 {
   "name": "video-vacuum",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Video Vacuum: paste a YouTube link, pick a format and quality, download. A small desktop app around yt-dlp.",
   "license": "GPL-3.0-or-later",
   "type": "module",

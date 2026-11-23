@@ -5,6 +5,8 @@
 //!   so a crash never leaves a half-written file.
 //! - Each file has a format version. A file from a newer app version is
 //!   never overwritten; the app just doesn't save to it.
+//! - History is the user's to control (D-28): remove one entry, clear it all,
+//!   or stop keeping it. Clearing removes only the list, never downloaded files.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -46,11 +48,40 @@ struct HistoryFileRef<'a> {
     entries: &'a [HistoryEntry],
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     /// None = the system Downloads folder.
     pub default_folder: Option<String>,
+    /// False = downloads aren't written to history. Missing in files saved
+    /// by v2.0.0, which is read as on (no format version change needed).
+    #[serde(default = "on")]
+    pub keep_history: bool,
+    /// Light, dark, or follow Windows (D-30). Missing in older files = system.
+    #[serde(default)]
+    pub theme: Theme,
+    /// Save the diagnostic log to disk (D-31). Off (session only) by default.
+    #[serde(default)]
+    pub save_log: bool,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Theme {
+    #[default]
+    System,
+    Light,
+    Dark,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Settings { default_folder: None, keep_history: true, theme: Theme::System, save_log: false }
+    }
+}
+
+fn on() -> bool {
+    true
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -64,6 +95,9 @@ pub struct Store {
     dir: PathBuf,
     /// Newest first.
     pub history: Vec<HistoryEntry>,
+    /// Downloads finished while history is off: kept in memory only, so this
+    /// session's "Open" and "Show in folder" still work. Never saved.
+    unsaved: Vec<HistoryEntry>,
     pub settings: Settings,
     history_writable: bool,
     settings_writable: bool,
@@ -83,20 +117,64 @@ impl Store {
                 Loaded::Missing => (Settings::default(), true),
                 Loaded::Newer | Loaded::Unreadable => (Settings::default(), false),
             };
-        Store { dir, history, settings, history_writable, settings_writable }
+        Store { dir, history, unsaved: Vec::new(), settings, history_writable, settings_writable }
     }
 
+    /// Records a finished download, or only remembers it for this session
+    /// when the user has turned history off.
     pub fn add(&mut self, entry: HistoryEntry) -> Result<(), String> {
+        if !self.settings.keep_history {
+            self.unsaved.push(entry);
+            return Ok(());
+        }
         self.history.insert(0, entry);
         self.save_history()
     }
 
     pub fn find(&self, id: &str) -> Option<&HistoryEntry> {
-        self.history.iter().find(|entry| entry.id == id)
+        self.history.iter().chain(&self.unsaved).find(|entry| entry.id == id)
+    }
+
+    /// Removes one entry from history. The downloaded file stays where it is.
+    pub fn remove(&mut self, id: &str) -> Result<(), String> {
+        let before = self.history.len();
+        self.history.retain(|entry| entry.id != id);
+        self.unsaved.retain(|entry| entry.id != id);
+        if self.history.len() == before {
+            return Ok(()); // already gone (or never saved): nothing to write
+        }
+        self.save_history()
+    }
+
+    /// Empties history. The downloaded files stay where they are.
+    pub fn clear(&mut self) -> Result<(), String> {
+        self.history.clear();
+        self.unsaved.clear();
+        self.save_history()
     }
 
     pub fn set_default_folder(&mut self, folder: Option<String>) -> Result<(), String> {
         self.settings.default_folder = folder;
+        self.save_settings()
+    }
+
+    /// Turning history off keeps the existing list; clearing it is separate.
+    pub fn set_keep_history(&mut self, keep: bool) -> Result<(), String> {
+        self.settings.keep_history = keep;
+        self.save_settings()
+    }
+
+    pub fn set_theme(&mut self, theme: Theme) -> Result<(), String> {
+        self.settings.theme = theme;
+        self.save_settings()
+    }
+
+    pub fn set_save_log(&mut self, save: bool) -> Result<(), String> {
+        self.settings.save_log = save;
+        self.save_settings()
+    }
+
+    fn save_settings(&self) -> Result<(), String> {
         if !self.settings_writable {
             return Err("Settings were saved by a newer version of Video Vacuum, so they weren't changed.".into());
         }
@@ -207,6 +285,67 @@ mod tests {
         assert!(store.set_default_folder(None).is_err());
         assert_eq!(fs::read_to_string(dir.join("history.json")).unwrap(), newer);
         assert_eq!(fs::read_to_string(dir.join("settings.json")).unwrap(), "not json");
+        assert!(store.clear().is_err());
+        assert!(store.set_keep_history(false).is_err());
+        assert_eq!(fs::read_to_string(dir.join("history.json")).unwrap(), newer);
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn theme_is_saved_and_read_back() {
+        let dir = temp_dir("theme");
+        let mut store = Store::open(dir.clone());
+        store.set_theme(Theme::Dark).unwrap();
+        assert_eq!(Store::open(dir.clone()).settings.theme, Theme::Dark);
+        let text = fs::read_to_string(dir.join("settings.json")).unwrap();
+        assert!(text.contains(r#""theme": "dark""#), "{text}");
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn entries_can_be_removed_and_history_cleared() {
+        let dir = temp_dir("remove");
+        let mut store = Store::open(dir.clone());
+        for id in ["a", "b", "c"] {
+            store.add(entry(id)).unwrap();
+        }
+        store.remove("b").unwrap();
+        store.remove("missing").unwrap();
+        let ids = |s: &Store| s.history.iter().map(|e| e.id.clone()).collect::<Vec<_>>();
+        assert_eq!(ids(&Store::open(dir.clone())), ["c", "a"]);
+
+        store.clear().unwrap();
+        assert!(store.find("a").is_none());
+        assert!(Store::open(dir.clone()).history.is_empty());
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn history_off_saves_nothing_but_this_session_still_finds_the_file() {
+        let dir = temp_dir("off");
+        let mut store = Store::open(dir.clone());
+        store.add(entry("kept")).unwrap();
+        store.set_keep_history(false).unwrap();
+        store.add(entry("private")).unwrap();
+
+        assert!(store.find("private").is_some(), "Open / Show in folder still work right after");
+        let reopened = Store::open(dir.clone());
+        assert_eq!(reopened.history.iter().map(|e| e.id.as_str()).collect::<Vec<_>>(), ["kept"]);
+        assert!(!reopened.settings.keep_history);
+        assert!(reopened.find("private").is_none(), "never written to disk");
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn settings_from_v2_0_0_keep_history_on() {
+        let dir = temp_dir("old-settings");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("settings.json"), r#"{"version": 1, "defaultFolder": "D:\\Clips"}"#).unwrap();
+        let store = Store::open(dir.clone());
+        assert!(store.settings.keep_history);
+        assert_eq!(store.settings.theme, Theme::System);
+        assert!(!store.settings.save_log, "logs are session-only unless turned on");
+        assert_eq!(store.settings.default_folder.as_deref(), Some(r"D:\Clips"));
         let _ = fs::remove_dir_all(dir);
     }
 }

@@ -1,9 +1,13 @@
-// Video Vacuum's window: Link → Video → Save as → progress, plus the History drawer.
+// Video Vacuum's window: Link → Video → Save as → progress, plus the History
+// and Settings panels (one open at a time), and a bottom bar with the engine
+// status and the Log toggle; the log docks above the bar (D-31).
 
-import { useEffect, useRef, useState } from "react";
-import { api, errorText, type DownloadEvent, type SettingsView, type ToolsStatus, type VideoInfo } from "./api";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { api, errorText, MP3_DEFAULT_KBPS, type DownloadEvent, type SettingsView, type ToolsStatus, type VideoInfo } from "./api";
 import DownloadStatus, { type DownloadState } from "./components/DownloadStatus";
 import HistoryDrawer from "./components/HistoryDrawer";
+import LogPanel from "./components/LogPanel";
+import SettingsDrawer from "./components/SettingsDrawer";
 // The skinny banner, made from media/ by tools/make-brand-images.ps1.
 import headerBanner from "./assets/header-banner.png";
 import LinkBox from "./components/LinkBox";
@@ -26,9 +30,29 @@ export default function App() {
   const [video, setVideo] = useState<VideoInfo | null>(null);
   const lookupId = useRef(0); // ignores slow answers for a link that was since replaced
 
-  const [choices, setChoices] = useState<SaveChoices>({ format: "mp4", height: null, fileName: "", folder: "" });
+  const [choices, setChoices] = useState<SaveChoices>({
+    format: "mp4",
+    height: null,
+    mp3Kbps: MP3_DEFAULT_KBPS,
+    fileName: "",
+    folder: "",
+  });
   const [download, setDownload] = useState<DownloadState>({ phase: "idle" });
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [panel, setPanel] = useState<"history" | "settings" | null>(null);
+  const [logOpen, setLogOpen] = useState(false);
+  // The side panels stop above whatever is docked at the bottom (log + bar).
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const bottom = bottomRef.current;
+    const layout = layoutRef.current;
+    if (!bottom || !layout) return;
+    const update = () => layout.style.setProperty("--bottom-stack", `${bottom.offsetHeight}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(bottom);
+    return () => observer.disconnect();
+  }, []);
   const [historyKey, setHistoryKey] = useState(0);
   const [update, setUpdate] = useState({ busy: false, message: "" });
 
@@ -36,6 +60,16 @@ export default function App() {
     api.checkTools().then(setTools).catch((e) => setToolsMessage(errorText(e)));
     api.getSettings().then(setSettings).catch(() => undefined);
   }, []);
+
+  // The page's colors follow the saved theme; Rust sets the window frame (D-30).
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings && settings.theme !== "system") root.dataset.theme = settings.theme;
+    else delete root.dataset.theme;
+  }, [settings?.theme]);
+
+  const togglePanel = (which: "history" | "settings") => setPanel((open) => (open === which ? null : which));
+  const historyChanged = () => setHistoryKey((k) => k + 1); // any open list re-reads
 
   const running = download.phase === "starting" || download.phase === "downloading" || download.phase === "finishing";
 
@@ -59,7 +93,7 @@ export default function App() {
   }
 
   function onEvent(event: DownloadEvent) {
-    if (event.kind === "done") setHistoryKey((k) => k + 1); // the drawer re-reads its list
+    if (event.kind === "done") historyChanged();
     setDownload((current) => {
       const jobId = "jobId" in current && current.jobId ? current.jobId : "";
       const fileName = "fileName" in current ? current.fileName : "";
@@ -88,7 +122,8 @@ export default function App() {
         {
           videoId: video.id,
           format: choices.format,
-          height: choices.format === "m4a" ? null : choices.height,
+          height: choices.format === "m4a" || choices.format === "mp3" ? null : choices.height,
+          mp3Kbps: choices.format === "mp3" ? choices.mp3Kbps : null,
           folder: choices.folder,
           fileName: choices.fileName,
         },
@@ -153,14 +188,21 @@ export default function App() {
   }
 
   return (
-    <div className={historyOpen ? "layout drawer-open" : "layout"}>
+    <div ref={layoutRef} className={panel ? "layout drawer-open" : "layout"}>
       <header className="masthead">
         <div className="brand"><img src={headerBanner} alt="Video Vacuum" /></div>
-        <button type="button" className="secondary history-toggle" aria-expanded={historyOpen}
-          aria-controls="download-history" onClick={() => setHistoryOpen(!historyOpen)}>
-          <span aria-hidden="true">◷</span> History
-        </button>
+        <div className="masthead-actions">
+          <button type="button" className="secondary history-toggle" aria-expanded={panel === "settings"}
+            aria-controls="settings-panel" onClick={() => togglePanel("settings")}>
+            <span aria-hidden="true">⚙</span> Settings
+          </button>
+          <button type="button" className="secondary history-toggle" aria-expanded={panel === "history"}
+            aria-controls="download-history" onClick={() => togglePanel("history")}>
+            <span aria-hidden="true">◷</span> History
+          </button>
+        </div>
       </header>
+      <div className="content">
       <main>
         {!tools && toolsMessage && <p className="message error" role="alert">{toolsMessage}</p>}
         {tools && !tools.ready && (
@@ -196,37 +238,73 @@ export default function App() {
         )}
         <DownloadStatus state={download} onCancel={cancel} onAnother={another} />
 
-        <footer>
-          <div className="engine">
-            <span className={tools?.ready ? "indicator ready" : "indicator"} />
-            <strong>{tools?.ready ? "Engine ready" : tools ? "Setup required" : toolsMessage ? "Engine unavailable" : "Checking tools…"}</strong>
-          </div>
-          <span>
-            yt-dlp {tools ? (tools.ytdlpVersion ?? "not found") : "…"}
-            {tools?.ytdlpVersion && (
-              <>
-                {" · "}
-                <button type="button" className="link" onClick={updateYtdlp} disabled={update.busy || running}>
-                  Update yt-dlp
-                </button>
-              </>
+      </main>
+      </div>
+
+      <div className="bottom-dock" ref={bottomRef}>
+        <LogPanel open={logOpen} onClose={() => setLogOpen(false)} saving={!!settings?.saveLog} />
+        <footer className="statusbar">
+          <div className="status-row">
+            <div className="engine">
+              <span className={tools?.ready ? "indicator ready" : "indicator"} />
+              <strong>{tools?.ready ? "Engine ready" : tools ? "Setup required" : toolsMessage ? "Engine unavailable" : "Checking tools…"}</strong>
+            </div>
+            <span>
+              yt-dlp {tools ? (tools.ytdlpVersion ?? "not found") : "…"}
+              {tools?.ytdlpVersion && (
+                <>
+                  {" · "}
+                  <button type="button" className="link" onClick={updateYtdlp} disabled={update.busy || running}>
+                    Update yt-dlp
+                  </button>
+                </>
+              )}
+              {" · "}
+              <button type="button" className="link" onClick={() => api.openProjectPage("privacy")}>
+                Privacy Policy
+              </button>
+              {" · "}
+              <button type="button" className="link" onClick={() => api.openProjectPage("github")}>
+                GitHub
+              </button>
+            </span>
+            {update.message && (
+              <span className="muted update-message" title={update.message}>
+                {update.message.split("\n")[0]}
+              </span>
             )}
-          </span>
-          {update.message && <p className="message pre">{update.message}</p>}
+            <button
+              type="button"
+              className={logOpen ? "secondary log-toggle on" : "secondary log-toggle"}
+              aria-expanded={logOpen}
+              aria-controls="log-panel"
+              onClick={() => setLogOpen(!logOpen)}
+            >
+              <span className="chevron" aria-hidden="true" /> Log
+            </button>
+          </div>
           {/* GPLv3 "Appropriate Legal Notices" (§0, §5d) */}
           <p className="small legal">
-            Video Vacuum © 2026 TheMysticTestudine. Free software under the GNU GPL v3 or later, with no warranty. Full
+            Video Vacuum © 2026 TheMysticTurtle. Free software under the GNU GPL v3 or later, with no warranty. Full
             license: gnu.org/licenses/gpl-3.0
           </p>
         </footer>
-      </main>
+      </div>
 
       <HistoryDrawer
-        open={historyOpen}
-        onToggle={() => setHistoryOpen(!historyOpen)}
+        open={panel === "history"}
+        onToggle={() => togglePanel("history")}
         refreshKey={historyKey}
         settings={settings}
         onSettingsChange={changeSettings}
+        onHistoryCleared={historyChanged}
+      />
+      <SettingsDrawer
+        open={panel === "settings"}
+        onClose={() => setPanel(null)}
+        settings={settings}
+        onSettingsChange={changeSettings}
+        onHistoryCleared={historyChanged}
       />
     </div>
   );

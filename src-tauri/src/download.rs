@@ -14,11 +14,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 
 
+use crate::activity::Level;
 use crate::store::HistoryEntry;
 use crate::tools::{hidden_command, Tools};
 use crate::ytdlp::{
-    escape_output_template, format_args, friendly_error, parse_line, progress_args, sanitize_file_name, Format, Line,
-    Lookup, VideoInfo,
+    escape_output_template, format_args, friendly_error, parse_line, progress_args, sanitize_file_name, step_words,
+    Format, Line, Lookup, VideoInfo, MP3_BITRATES, MP3_DEFAULT_KBPS,
 };
 
 /// What the page asks for: only the choices. The video itself (link, title,
@@ -32,6 +33,9 @@ pub struct DownloadRequest {
     pub format: Format,
     /// None = best available.
     pub height: Option<u32>,
+    /// MP3 only: kbit/s, one of `MP3_BITRATES`. None = the default.
+    #[serde(default)]
+    pub mp3_kbps: Option<u32>,
     pub folder: String,
     /// Without extension; made safe and unique here.
     pub file_name: String,
@@ -107,6 +111,9 @@ pub fn prepare(
     let lookup = lookup
         .filter(|lookup| lookup.info.id == request.video_id)
         .ok_or("Look up the video again, then download.")?;
+    if request.format == Format::Mp3 && !MP3_BITRATES.contains(&mp3_kbps(request)) {
+        return Err("Choose an MP3 bitrate from the list.".into());
+    }
     let folder = PathBuf::from(request.folder.trim());
     if request.folder.trim().is_empty() || !folder.is_absolute() {
         return Err("Choose a folder to save into.".into());
@@ -128,6 +135,21 @@ pub fn prepare(
         Source::Url(lookup.info.url.clone())
     };
     Ok(Prepared { video: lookup.info.clone(), source, folder, stem, existing })
+}
+
+/// "1080p", "Best available", "Audio", "192 kbps": for history and the log.
+fn quality_label(request: &DownloadRequest) -> String {
+    if request.format == Format::Mp3 {
+        format!("{} kbps", mp3_kbps(request))
+    } else if request.format.is_audio_only() {
+        "Audio".into()
+    } else {
+        request.height.map_or_else(|| "Best available".into(), |h| format!("{h}p"))
+    }
+}
+
+fn mp3_kbps(request: &DownloadRequest) -> u32 {
+    request.mp3_kbps.unwrap_or(MP3_DEFAULT_KBPS)
 }
 
 /// Lowercase names of everything in `folder`.
@@ -169,20 +191,35 @@ fn clean_up(folder: &Path, stem: &str, existing: &HashSet<String>) {
     }
 }
 
-/// Run the download to the end, sending events as it goes. Returns the
-/// finished file's history entry, or None if it failed or was cancelled.
+/// What the diagnostic log is told (D-31): a level, plain words, optional detail.
+pub type Note<'a> = &'a dyn Fn(Level, String, Option<String>);
+
+/// Run the download to the end, sending events to the window and plain-word
+/// steps to the diagnostic log as it goes. Returns the finished file's history
+/// entry, or None if it failed or was cancelled.
 pub fn run(
     tools: &Tools,
     request: &DownloadRequest,
     prepared: &Prepared,
     job: &JobControl,
     send: &dyn Fn(DownloadEvent),
+    note: Note,
 ) -> Option<HistoryEntry> {
     send(DownloadEvent::Started { file_name: prepared.stem.clone() });
+    let source = match &prepared.source {
+        Source::InfoJson(_) => "the lookup just made (no second trip to YouTube)",
+        Source::Url(_) => "the link (the earlier lookup was over an hour old)",
+    };
+    note(
+        Level::Info,
+        format!("Downloading \"{}\" as {} ({})", prepared.video.title, request.format.label(), quality_label(request)),
+        Some(format!("Folder: {}\nFrom: {source}", prepared.folder.display())),
+    );
 
     let mut command = match tools.ytdlp_command() {
         Ok(command) => command,
         Err(message) => {
+            note(Level::Error, message.clone(), None);
             send(DownloadEvent::Failed { message, detail: String::new() });
             return None;
         }
@@ -190,7 +227,7 @@ pub fn run(
     command
         .args(tools.ytdlp_base_args())
         .args(progress_args())
-        .args(format_args(request.format, request.height))
+        .args(format_args(request.format, request.height, mp3_kbps(request)))
         .arg("--no-overwrites")
         .arg("-P")
         .arg(&prepared.folder)
@@ -208,6 +245,7 @@ pub fn run(
     let mut child = match command.spawn() {
         Ok(child) => child,
         Err(err) => {
+            note(Level::Error, "Couldn't start yt-dlp.".into(), Some(err.to_string()));
             send(DownloadEvent::Failed { message: "Couldn't start yt-dlp.".into(), detail: err.to_string() });
             return None;
         }
@@ -240,14 +278,30 @@ pub fn run(
 
     let mut final_path: Option<String> = None;
     let mut other_output = String::new();
+    // Log each stream once when it starts, and each finishing step once.
+    let mut stage_logged: Option<&'static str> = None;
+    let mut step_logged = String::new();
     for line in lines_rx {
         match parse_line(&line) {
             Line::Progress { stage, percent, speed, eta } => {
+                if stage_logged != Some(stage) {
+                    stage_logged = Some(stage);
+                    note(Level::Info, format!("Downloading the {stage} stream"), None);
+                }
                 send(DownloadEvent::Progress { stage, percent, speed, eta })
             }
-            Line::Finishing => send(DownloadEvent::Finishing),
+            Line::Finishing(step) => {
+                if step != step_logged {
+                    note(Level::Info, step_words(&step, request.format), None);
+                    step_logged = step;
+                }
+                send(DownloadEvent::Finishing)
+            }
             Line::File(path) => final_path = Some(path),
             Line::Other(text) => {
+                if let Some(warning) = text.trim().strip_prefix("WARNING:") {
+                    note(Level::Warn, "yt-dlp warning".into(), Some(warning.trim().to_string()));
+                }
                 other_output.push_str(&text);
                 other_output.push('\n');
             }
@@ -260,6 +314,7 @@ pub fn run(
 
     if job.cancelled.load(Ordering::SeqCst) {
         clean_up(&prepared.folder, &prepared.stem, &prepared.existing);
+        note(Level::Info, "Cancelled. The unfinished files were removed.".into(), None);
         send(DownloadEvent::Cancelled);
         return None;
     }
@@ -273,20 +328,22 @@ pub fn run(
                 channel: prepared.video.channel.clone(),
                 thumbnail: prepared.video.thumbnail.clone(),
                 format: request.format.label().into(),
-                quality: if request.format.is_audio_only() {
-                    "Audio".into()
-                } else {
-                    request.height.map_or_else(|| "Best available".into(), |h| format!("{h}p"))
-                },
+                quality: quality_label(request),
                 size_bytes: fs::metadata(&path).ok().map(|m| m.len()),
                 file_path: path,
                 downloaded_at: now_seconds(),
             };
+            let size = entry.size_bytes.map(|b| format!(" ({:.1} MB)", b as f64 / 1e6)).unwrap_or_default();
+            note(Level::Info, format!("Saved {}{size}", entry.file_path), None);
             Some(entry)
         }
         None => {
             clean_up(&prepared.folder, &prepared.stem, &prepared.existing);
             let error = friendly_error(&other_output);
+            // The log gets yt-dlp's last lines, not just the one shown in the window.
+            let lines: Vec<&str> = other_output.lines().filter(|l| !l.trim().is_empty()).collect();
+            let tail = lines[lines.len().saturating_sub(15)..].join("\n");
+            note(Level::Error, format!("Download failed: {}", error.message), Some(tail));
             send(DownloadEvent::Failed { message: error.message, detail: error.detail });
             None
         }
@@ -405,6 +462,7 @@ mod tests {
             video_id: "jNQXAC9IVRw".into(),
             format: Format::Mp4,
             height: None,
+            mp3_kbps: None,
             folder: dir.display().to_string(),
             file_name: "x".into(),
         };
@@ -414,6 +472,12 @@ mod tests {
         assert!(prepare(&request, Some(&other), &dir, "j2").unwrap_err().contains("Look up"));
         let relative = DownloadRequest { folder: "relative/folder".into(), ..request.clone() };
         assert!(prepare(&relative, Some(&fresh), &dir, "j3").is_err());
+        let odd_bitrate = DownloadRequest { format: Format::Mp3, mp3_kbps: Some(999), ..request.clone() };
+        assert!(prepare(&odd_bitrate, Some(&fresh), &dir, "j4").unwrap_err().contains("bitrate"));
+        let mp3 = DownloadRequest { format: Format::Mp3, mp3_kbps: Some(320), ..request.clone() };
+        assert!(prepare(&mp3, Some(&fresh), &dir, "j5").is_ok());
+        let default_mp3 = DownloadRequest { format: Format::Mp3, mp3_kbps: None, ..request.clone() };
+        assert!(prepare(&default_mp3, Some(&fresh), &dir, "j6").is_ok());
         let _ = fs::remove_dir_all(dir);
     }
 
@@ -424,6 +488,7 @@ mod tests {
             video_id: "jNQXAC9IVRw".into(),
             format: Format::Mp4,
             height: None,
+            mp3_kbps: None,
             folder: dir.display().to_string(),
             file_name: "x".into(),
         };

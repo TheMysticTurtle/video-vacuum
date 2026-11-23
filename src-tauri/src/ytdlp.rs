@@ -38,7 +38,14 @@ pub enum Format {
     Webm,
     Mkv,
     M4a,
+    /// The one format that's converted (D-27): YouTube sends no MP3.
+    Mp3,
 }
+
+/// The MP3 bitrates on offer, in kbit/s. YouTube's own audio is about
+/// 130-160 kbit/s, so 192 is the sensible default; 320 only makes the file bigger.
+pub const MP3_BITRATES: [u32; 4] = [128, 192, 256, 320];
+pub const MP3_DEFAULT_KBPS: u32 = 192;
 
 impl Format {
     pub fn label(self) -> &'static str {
@@ -47,11 +54,12 @@ impl Format {
             Format::Webm => "WebM",
             Format::Mkv => "MKV",
             Format::M4a => "M4A",
+            Format::Mp3 => "MP3",
         }
     }
 
     pub fn is_audio_only(self) -> bool {
-        self == Format::M4a
+        matches!(self, Format::M4a | Format::Mp3)
     }
 
     /// The extensions the finished file can end up with.
@@ -61,6 +69,7 @@ impl Format {
             Format::Webm => &["webm", "mkv"], // falls back to .mkv
             Format::Mkv => &["mkv"],
             Format::M4a => &["m4a"],
+            Format::Mp3 => &["mp3"],
         }
     }
 }
@@ -84,17 +93,46 @@ impl Lookup {
 }
 
 /// Ask yt-dlp about a video. `-J` prints its info as JSON and downloads nothing.
-pub fn video_info(tools: &Tools, url: &str) -> Result<Lookup, String> {
+/// Also returns yt-dlp's warnings, for the diagnostic log.
+pub fn video_info(tools: &Tools, url: &str) -> Result<(Lookup, Vec<String>), FriendlyError> {
     let mut args = tools.ytdlp_base_args();
     args.extend(["-J".into(), "--".into(), url.into()]);
-    let output = tools.run_ytdlp(&args)?;
+    let output = tools
+        .run_ytdlp(&args)
+        .map_err(|message| FriendlyError { message, detail: String::new() })?;
+    let stderr = String::from_utf8_lossy(&output.stderr);
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(friendly_error(&stderr).message);
+        return Err(friendly_error(&stderr));
     }
-    let parsed: Value = serde_json::from_slice(&output.stdout)
-        .map_err(|err| format!("yt-dlp returned something unexpected: {err}"))?;
-    Ok(Lookup { info: parse_info(url, &parsed), info_json: output.stdout, fetched: SystemTime::now() })
+    let parsed: Value = serde_json::from_slice(&output.stdout).map_err(|err| FriendlyError {
+        message: "yt-dlp returned something unexpected.".into(),
+        detail: err.to_string(),
+    })?;
+    let lookup = Lookup { info: parse_info(url, &parsed), info_json: output.stdout, fetched: SystemTime::now() };
+    Ok((lookup, warnings(&stderr)))
+}
+
+/// yt-dlp's `WARNING:` lines, without the prefix.
+pub fn warnings(output: &str) -> Vec<String> {
+    output
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("WARNING:"))
+        .map(|w| w.trim().to_string())
+        .filter(|w| !w.is_empty())
+        .collect()
+}
+
+/// Plain words for yt-dlp's post-processing steps (its class names), for the log.
+pub fn step_words(step: &str, format: Format) -> String {
+    match step {
+        "Merger" => "Joining the video and audio into one file".into(),
+        "ExtractAudio" if format == Format::Mp3 => "Converting the audio to MP3".into(),
+        "ExtractAudio" => "Taking out the audio track".into(),
+        "VideoRemuxer" => "Checking the file's container".into(),
+        "MoveFiles" => "Moving the file into place".into(),
+        s if s.starts_with("Fixup") => "Tidying up the file".into(),
+        other => format!("Finishing up ({other})"),
+    }
 }
 
 /// The smallest thumbnail at least 400 px wide (sharp at 200 px on high-DPI
@@ -160,10 +198,12 @@ fn format_upload_date(raw: &str) -> Option<String> {
 /// yt-dlp options for each format. YouTube sends video and audio separately;
 /// yt-dlp picks the best pair and ffmpeg joins them without re-encoding.
 /// `-S res:720` = best quality no larger than 720p (README, "Sorting Formats").
+/// MP3 is the exception: ffmpeg converts the best audio at `mp3_kbps`
+/// (README, "Post-Processing Options": `--audio-format`, `--audio-quality`).
 ///
 /// A future clip/section feature adds its `--download-sections` options next
 /// to these; nothing else in the download path needs to change.
-pub fn format_args(format: Format, height: Option<u32>) -> Vec<String> {
+pub fn format_args(format: Format, height: Option<u32>, mp3_kbps: u32) -> Vec<String> {
     let res = height.map_or_else(|| "res".to_string(), |h| format!("res:{h}"));
     let args: Vec<String> = match format {
         // Most compatible: H.264 + AAC. YouTube only offers H.264 up to 1080p;
@@ -199,6 +239,17 @@ pub fn format_args(format: Format, height: Option<u32>) -> Vec<String> {
             "-x".into(),
             "--audio-format".into(),
             "m4a".into(),
+        ],
+        // Audio only, converted: the best audio (usually Opus), re-encoded by
+        // ffmpeg's LAME encoder at a constant bitrate.
+        Format::Mp3 => vec![
+            "-f".into(),
+            "ba/b".into(),
+            "-x".into(),
+            "--audio-format".into(),
+            "mp3".into(),
+            "--audio-quality".into(),
+            format!("{mp3_kbps}K"),
         ],
     };
     args
@@ -236,7 +287,8 @@ pub enum Line {
         speed: Option<f64>,
         eta: Option<u64>,
     },
-    Finishing,
+    /// A post-processing step began or ended (yt-dlp's name for it, e.g. "Merger").
+    Finishing(String),
     File(String),
     Other(String),
 }
@@ -261,8 +313,8 @@ pub fn parse_line(line: &str) -> Line {
             }
         }
         Line::Other(line.to_string())
-    } else if line.starts_with(STAGE_MARK) {
-        Line::Finishing
+    } else if let Some(step) = line.strip_prefix(STAGE_MARK) {
+        Line::Finishing(step.trim().to_string())
     } else if let Some(path) = line.strip_prefix(FILE_MARK) {
         Line::File(path.to_string())
     } else {
@@ -365,9 +417,15 @@ mod tests {
         assert!(matches!(parse_line(audio), Line::Progress { stage: "audio", percent, .. } if percent == 25.0));
         let unknown_total = r#"@@P {"status": "downloading", "downloaded_bytes": 10} avc1"#;
         assert!(matches!(parse_line(unknown_total), Line::Progress { percent, .. } if percent == 0.0));
-        assert_eq!(parse_line("@@S Merger"), Line::Finishing);
+        assert_eq!(parse_line("@@S Merger
+"), Line::Finishing("Merger".into()));
         assert_eq!(parse_line("@@F C:\\Videos\\a b.mp4\r"), Line::File("C:\\Videos\\a b.mp4".into()));
         assert!(matches!(parse_line("WARNING: something"), Line::Other(_)));
+        assert_eq!(warnings("[youtube] x\nWARNING: [youtube] No JS runtime\nWARNING:   \n"), ["[youtube] No JS runtime"]);
+        assert_eq!(step_words("Merger", Format::Mp4), "Joining the video and audio into one file");
+        assert_eq!(step_words("ExtractAudio", Format::Mp3), "Converting the audio to MP3");
+        assert_eq!(step_words("FixupM3u8", Format::Mp4), "Tidying up the file");
+        assert_eq!(step_words("SomethingNew", Format::Mkv), "Finishing up (SomethingNew)");
     }
 
     #[test]
@@ -444,9 +502,15 @@ mod tests {
 
     #[test]
     fn formats_map_to_documented_options() {
-        assert_eq!(format_args(Format::Mp4, Some(720))[1], "res:720,codec:h264:m4a");
-        assert_eq!(format_args(Format::Mkv, None)[1], "res");
-        assert_eq!(format_args(Format::Webm, Some(1080))[3], "webm/mkv");
-        assert!(format_args(Format::M4a, Some(720)).contains(&"-x".to_string()));
+        assert_eq!(format_args(Format::Mp4, Some(720), 192)[1], "res:720,codec:h264:m4a");
+        assert_eq!(format_args(Format::Mkv, None, 192)[1], "res");
+        assert_eq!(format_args(Format::Webm, Some(1080), 192)[3], "webm/mkv");
+        assert!(format_args(Format::M4a, Some(720), 192).contains(&"-x".to_string()));
+        // M4A is never converted; MP3 is, at the chosen bitrate.
+        assert!(!format_args(Format::M4a, None, 192).contains(&"--audio-quality".to_string()));
+        let mp3 = format_args(Format::Mp3, Some(720), 320);
+        assert!(mp3.windows(2).any(|w| w == ["--audio-format", "mp3"]));
+        assert!(mp3.windows(2).any(|w| w == ["--audio-quality", "320K"]));
+        assert!(!mp3.iter().any(|a| a.starts_with("res")), "a video height never reaches an audio download");
     }
 }

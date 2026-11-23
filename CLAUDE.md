@@ -35,10 +35,16 @@ name and folder, download. It keeps a searchable History drawer. Open source
   The dark-studio look (GPT, then Claude) with the owner's brand art is merged (D-24, D-25).
   **v2.0.0 is released** on GitHub (2026-11-22) and the owner has walked through it.
   The repo is **public**, with `PRIVACY.md` and every commit under the GitHub
-  noreply email (D-26). v1 is kept as tag `v1.0.0-local-web`. Nothing is queued;
-  the owner picks from the ROADMAP backlog.
-- **Commit email:** always `101545919+TheMysticTurtle@users.noreply.github.com`
-  (set in this repo's config and globally). Never commit with a personal email.
+  noreply email (D-26). v1 is kept as tag `v1.0.0-local-web`.
+  **v2.1.0 is merged into `main` and pushed (2026-11-23), not yet released:**
+  history privacy controls (D-28), MP3 with a chosen bitrate (D-27), the
+  author name TheMysticTurtle (D-29), the Settings panel / theme / layout
+  polish (D-30), the bottom bar and the diagnostic Log (D-31), and README
+  screenshots. The owner tested the installer ("it's beautiful! seems to work
+  great"). Next: the owner runs the Release workflow for v2.1.0.
+- **Author:** always `TheMysticTurtle <101545919+TheMysticTurtle@users.noreply.github.com>`
+  (repo config and global), in commits, copyright lines and credits. Never
+  "TheMysticTestudine" (another account) and never a personal email.
 
 ## Documentation map
 
@@ -60,6 +66,7 @@ name and folder, download. It keeps a searchable History drawer. Open source
 | `src-tauri/src/ytdlp.rs` | Video info, format options, progress lines, plain-word errors, safe file names |
 | `src-tauri/src/download.rs` | One download: unique name, run, progress, cancel, cleanup |
 | `src-tauri/src/store.rs` | History + settings JSON (atomic, versioned) |
+| `src-tauri/src/activity.rs` | The diagnostic log: session memory, optional daily files, 30-day cleanup (D-31) |
 | `src/App.tsx`, `src/components/` | The window: Link → Video → Save as → status, History drawer |
 | `src/api.ts` | Typed calls to the Rust commands |
 
@@ -69,6 +76,8 @@ name and folder, download. It keeps a searchable History drawer. Open source
 - **Quality gate** before every commit: `cargo clippy --all-targets -- -D warnings`
   + `cargo test` (in `src-tauri/`) + `npm run check`. Real downloads through the
   real window are the main proof (see `docs/TECH_REFERENCE.md`, "Testing").
-- **Git:** one `feature/<name>` branch per build; merge to `main` with `--no-ff`
-  only when tested. Commits: WHY / WHAT / TEST RESULTS. **Claude commits; the owner pushes.**
+- **Git:** one `feature/<name>` branch per build. **Never merge into `main`
+  until the owner has tried the build themselves and said it's good**
+  (owner, 2026-11-23: "do not auto merge branches into my stable main until I
+  test it myself and tell you it's good"). Then merge with `--no-ff`. Commits: WHY / WHAT / TEST RESULTS. **Claude commits; the owner pushes.**
 - **Test windows stay off the owner's screen** (hidden window + CDP; see the tech reference).

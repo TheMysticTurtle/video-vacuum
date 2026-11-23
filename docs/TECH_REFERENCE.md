@@ -22,7 +22,7 @@ gotchas hit along the way. Versions are as of **2026-11-22**.
 
 **Outside programs the app runs (not shipped, installed separately; D-15):**
 - yt-dlp: Unlicense, https://github.com/yt-dlp/yt-dlp. winget `yt-dlp.yt-dlp`.
-- FFmpeg: GPL build, winget `yt-dlp.FFmpeg`.
+- FFmpeg: GPL build, winget `yt-dlp.FFmpeg`. Its LAME encoder (`libmp3lame`, LGPL) makes the MP3s (D-27); checked with `ffmpeg -encoders`.
 - Deno: MIT, winget `DenoLand.Deno`.
 
 ### License scan (2026-11-22)
@@ -53,15 +53,21 @@ cd src-tauri && cargo clippy --all-targets -- -D warnings && cargo test
 npm run check   # tsc --noEmit
 ```
 
-The Rust tests (16) cover:
+The Rust tests (25) cover:
 - link cleanup (12 good forms, 9 bad)
 - file-name safety
 - progress-line parsing
 - plain-word errors
 - yt-dlp JSON → card info
-- format options
+- format options, including MP3 bitrates and refusing a bitrate not on the list
 - unique naming and cleanup that only touches its own files
 - history/settings save, reload and newer-file protection
+- removing an entry, clearing history, history turned off (nothing written,
+  but the session can still open the file), v2.0.0 settings reading as "keep history"
+  and "system" theme, the theme saved and read back
+- the diagnostic log: UTC dates (round trip, leap day), the file line format,
+  memory-only until saving is on, 30-day cleanup that touches only our files,
+  the 2000-line cap, skipping exact repeats; yt-dlp warnings and step names
 - PATH variable expansion
 - winget detection
 
@@ -82,7 +88,14 @@ WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9223" \
   `DataTransfer`), set `<select>` values (via the native value setter, then a
   `change` event) and click buttons. It can also call Rust commands directly
   through `window.__TAURI_INTERNALS__.invoke`.
-- The dev app uses the real app-data folder. Put test downloads in a scratch folder and clean up afterwards.
+- **Give the test app its own data folder** by adding `"identifier":"com.themysticturtle.videovacuum.devtest"`
+  to the `--config` JSON. Otherwise the dev app uses the owner's real history
+  and settings, and a Clear history test would wipe them. Then set the default
+  folder to a scratch folder (`invoke('set_default_folder', …)`), and delete
+  both `…devtest` folders in `%APPDATA%` and `%LOCALAPPDATA%` afterwards.
+- **Stop only the test app's own processes** (by PID, or `TaskStop` on the dev
+  command plus the Vite server on port 1420). `taskkill /IM video-vacuum.exe`
+  also closes the owner's installed copy if it's open.
 
 ## 5. Gotchas
 
@@ -106,7 +119,17 @@ WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9223" \
   The `yt-dlp --version` call (~0.9 s, a separate process) runs afterwards and
   never gates lookups.
 - **`std::fs::rename` replaces an existing file on Windows**, which makes the temp-then-rename save atomic.
-- **WebView2 `prefers-color-scheme`** follows the Windows app theme, so light/dark needs no code.
+- **WebView2 `prefers-color-scheme`** follows the Windows app theme, so "System" needs no code.
+- **Theme (D-30):**
+  - Colors use CSS `light-dark()` plus `color-scheme`. Chromium supports it
+    from version 123; WebView2 is evergreen and was runtime 157 on the dev PC.
+  - `data-theme="light|dark"` on `<html>` forces a theme.
+  - The title bar follows `Window::set_theme`, called from Rust, so the page
+    needs no `core:window:allow-set-theme` permission.
+- **Window size (D-30):** `tauri.conf.json` asks for 1000 x 960 (measured: a
+  looked-up video plus every save option, no scrolling). `fit_window_to_screen`
+  in `lib.rs` shrinks it to `Monitor::work_area` on smaller screens. Tested
+  with a 3000 px tall window: it came out exactly the monitor's usable height.
 
 ## 6. Releasing (GitHub Actions)
 
@@ -147,7 +170,22 @@ gh workflow run release.yml -f draft=true   # save as a draft to review first
 - **GitHub renames assets with spaces:** `Video Vacuum_2.0.0_x64-setup.exe` is
   published as `Video.Vacuum_2.0.0_x64-setup.exe`. Refer to the dotted name in docs.
 
-## 7. Brand images
+## 7. Brand images and screenshots
+
+**README screenshots** (`docs/images/screenshots/*.png`) are the owner's own
+demo captures, copied by hand from `media/` (which git ignores):
+
+| File | From `media/` |
+|---|---|
+| `start.png` | `Starting-Screen-Demo.png` |
+| `video-loaded.png` | `Video-Loaded-Demo.png` |
+| `history.png` | `History-Demo.png` |
+| `settings.png` | `Settings-Demo.png` |
+| `log.png` | `Log-Demo.png` |
+
+Retake them when the window changes noticeably.
+
+**Brand images:**
 
 Originals live in `media/` (ignored by git). Every small copy is made by
 `tools/make-brand-images.ps1`, which uses only Windows' built-in System.Drawing:

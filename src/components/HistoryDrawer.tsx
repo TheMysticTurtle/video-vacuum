@@ -1,25 +1,29 @@
 // The History drawer on the right: the masthead's "History" button opens it.
-// Inside: a "Default folder" setting, a search box, and every past download.
+// Inside, top to bottom: the title and Close; a search box (with a Clear
+// button once something is typed); a box with "Keep download history" and
+// "Clear history" side by side (the same controls as in Settings, sharing one
+// saved value; D-30); and every past download, each with Remove. Removing or clearing only
+// forgets entries; downloaded files are never touched (D-28).
 // Files that were moved or deleted collapse and grey out; expanding one says
 // where it used to be.
 
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { useEffect, useMemo, useState } from "react";
 import { api, errorText, type HistoryItem, type SettingsView } from "../api";
 import { formatBytes, formatWhen } from "../format";
+import HistoryControls from "./HistoryControls";
 
 interface Props {
   open: boolean;
   onToggle: () => void;
-  refreshKey: number; // bumps after each finished download
+  refreshKey: number; // bumps after each finished download and after clearing
   settings: SettingsView | null;
   onSettingsChange: (settings: SettingsView) => void;
+  onHistoryCleared: () => void;
 }
 
-export default function HistoryDrawer({ open, onToggle, refreshKey, settings, onSettingsChange }: Props) {
+export default function HistoryDrawer({ open, onToggle, refreshKey, settings, onSettingsChange, onHistoryCleared }: Props) {
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [search, setSearch] = useState("");
-  const [showSettings, setShowSettings] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
@@ -50,20 +54,11 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
     });
   }, [items, search]);
 
-  async function changeFolder() {
-    const folder = await openDialog({ directory: true, defaultPath: settings?.defaultFolder, title: "Default download folder" });
-    if (typeof folder !== "string") return;
+  async function remove(id: string) {
     try {
-      onSettingsChange(await api.setDefaultFolder(folder));
+      await api.removeHistoryEntry(id);
+      setItems((list) => list.filter((item) => item.id !== id));
       setMessage("");
-    } catch (e) {
-      setMessage(errorText(e));
-    }
-  }
-
-  async function resetFolder() {
-    try {
-      onSettingsChange(await api.setDefaultFolder(null));
     } catch (e) {
       setMessage(errorText(e));
     }
@@ -86,35 +81,31 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
             <h2>Download history</h2>
             <button type="button" className="secondary" onClick={onToggle}>Close</button>
           </div>
-          <button type="button" className="link settings-toggle" onClick={() => setShowSettings(!showSettings)}
-            aria-expanded={showSettings}>Default folder</button>
+          <div className="with-suffix search-box">
+            <input
+              type="text"
+              placeholder="Search downloads"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setSearch("")}
+              aria-label="Search downloads"
+              spellCheck={false}
+            />
+            {search && (
+              <button type="button" className="link search-clear" onClick={() => setSearch("")}>
+                Clear
+              </button>
+            )}
+          </div>
 
-          {showSettings && settings && (
-            <div className="settings">
-              <span className="label">Default download folder</span>
-              <p className="folder-path" title={settings.defaultFolder}>
-                {settings.defaultFolder}
-              </p>
-              <div className="row">
-                <button type="button" className="secondary" onClick={changeFolder}>
-                  Change…
-                </button>
-                {settings.isCustom && (
-                  <button type="button" className="secondary" onClick={resetFolder}>
-                    Use Downloads
-                  </button>
-                )}
-              </div>
-            </div>
+          {settings && (
+            <HistoryControls
+              settings={settings}
+              onSettingsChange={onSettingsChange}
+              onCleared={onHistoryCleared}
+              canClear={items.length > 0}
+            />
           )}
-
-          <input
-            type="search"
-            placeholder="Search downloads"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label="Search downloads"
-          />
           {message && <p className="message error">{message}</p>}
 
           <ul className="history-list">
@@ -141,6 +132,10 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
                       <button type="button" className="link" onClick={() => run(() => api.showInFolder(item.id))}>
                         Show in folder
                       </button>
+                      <button type="button" className="link" onClick={() => remove(item.id)}
+                        aria-label={`Remove "${item.title}" from history`}>
+                        Remove
+                      </button>
                     </div>
                   </div>
                 </li>
@@ -159,6 +154,11 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
                       Moved from {item.filePath}
                       <br />
                       {formatWhen(item.downloadedAt)}
+                      <br />
+                      <button type="button" className="link" onClick={() => remove(item.id)}
+                        aria-label={`Remove "${item.title}" from history`}>
+                        Remove
+                      </button>
                     </p>
                   )}
                 </li>

@@ -31,7 +31,7 @@ body {
 
 .label {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -222,8 +222,31 @@ progress {
   overflow-wrap: anywhere;
   max-height: 220px;
   overflow-y: auto;
-  margin: 8px 0 0;
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--field);
   color: var(--muted);
+}
+/* Show / Hide description: a small button with an arrow that turns down when open. */
+button.disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+.chevron {
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg); /* points right */
+  transition: transform 0.15s ease;
+}
+button.disclosure[aria-expanded="true"] .chevron {
+  transform: rotate(45deg); /* points down */
 }
 
 .message {
@@ -274,6 +297,31 @@ footer {
   margin: 0 0 8px;
   overflow-wrap: anywhere;
   font-size: 0.85rem;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 10px;
+  cursor: pointer;
+}
+.check input {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+.confirm p {
+  margin: 0 0 8px;
+}
+button.danger {
+  background: transparent;
+  color: var(--error);
+  border-color: var(--error);
+}
+button.danger:hover:not(:disabled) {
+  background: var(--bg);
+  border-color: var(--error);
 }
 
 .history-list {
@@ -344,60 +392,57 @@ footer {
    dark values are the "dark studio" palette. The hero keeps its own dark
    stage in both modes, because it frames artwork. */
 :root {
+  /* Theme (D-30): "System" follows Windows; the Settings panel can force light
+     or dark by setting data-theme on <html>. color-scheme also switches the
+     native parts (scrollbars, dropdown lists, checkboxes). Each color is
+     written once as light-dark(light, dark). */
   color-scheme: light dark;
-  --bg: #f4f5f9;
-  --panel: #ffffff;
-  --field: #ffffff;
-  --text: #1b1d26;
-  --muted: #5d6475;
-  --border: #d6d9e3;
-  --accent: #4f57c9;
-  --accent-hover: #434ab3;
-  --accent-text: #ffffff;
-  --error: #9a5b00;
-  --glow: #e3e6fb;
-  --masthead: #ffffff;
-  --masthead-border: #e1e3ea;
-  --card-border: #d6d9e3;
-  --card-shadow: 0 15px 40px #1b1d2614;
-  --label: #4b5163;
-  --placeholder: #8a90a0;
-  --legal: #6b7182;
-  --engine: #3f4556;
-  --ready: #2f9d78;
-  --drawer-shadow: -10px 12px 52px #1b1d2624;
+  --bg: light-dark(#f4f5f9, #101217);
+  --panel: light-dark(#ffffff, #1a1d25);
+  --field: light-dark(#ffffff, #101319);
+  --text: light-dark(#1b1d26, #eef0f8);
+  --muted: light-dark(#5d6475, #a5acbd);
+  --border: light-dark(#d6d9e3, #373c4a);
+  --accent: light-dark(#4f57c9, #bec4ff);
+  --accent-hover: light-dark(#434ab3, #d7daff);
+  --accent-text: light-dark(#ffffff, #181a31);
+  --error: light-dark(#9a5b00, #ffbd83);
+  --glow: light-dark(#e3e6fb, #1b1f31);
+  --masthead: light-dark(#ffffff, #13151c);
+  --masthead-border: light-dark(#e1e3ea, #2a2e39);
+  --card-border: light-dark(#d6d9e3, #424858);
+  --card-shadow: 0 15px 40px light-dark(#1b1d2614, #05060930);
+  --label: light-dark(#4b5163, #c1c7d9);
+  --placeholder: light-dark(#8a90a0, #9097a9);
+  --legal: light-dark(#6b7182, #949bad);
+  --engine: light-dark(#3f4556, #c4cad5);
+  --ready: light-dark(#2f9d78, #84d8b8);
+  --drawer-shadow: -10px 12px 52px light-dark(#1b1d2624, #0007);
   --gutter: clamp(16px, 4vw, 48px);
   --drawer-width: min(350px, 94vw);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #101217;
-    --panel: #1a1d25;
-    --field: #101319;
-    --text: #eef0f8;
-    --muted: #a5acbd;
-    --border: #373c4a;
-    --accent: #bec4ff;
-    --accent-hover: #d7daff;
-    --accent-text: #181a31;
-    --error: #ffbd83;
-    --glow: #1b1f31;
-    --masthead: #13151c;
-    --masthead-border: #2a2e39;
-    --card-border: #424858;
-    --card-shadow: 0 15px 40px #05060930;
-    --label: #c1c7d9;
-    --placeholder: #9097a9;
-    --legal: #949bad;
-    --engine: #c4cad5;
-    --ready: #84d8b8;
-    --drawer-shadow: -10px 12px 52px #0007;
-  }
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
+/* App shell (D-31): masthead on top, the page scrolls in the middle, and the
+   log + status bar are docked at the bottom, always visible. */
 .layout {
-  min-height: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   background: radial-gradient(ellipse at 78% 12%, var(--glow) 0, transparent 52%), var(--bg);
+}
+.content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.bottom-dock {
+  flex: 0 0 auto;
 }
 .masthead {
   display: flex;
@@ -445,22 +490,125 @@ h2 { font-size: 1.15rem; letter-spacing: -.03em; }
 .field input, .field select { color: var(--text); }
 button { border-radius: 12px; }
 input::placeholder { color: var(--placeholder); }
-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 15px; padding: 14px 2px 0; }
-footer .legal, footer .message { width: 100%; }
-footer .legal { font-size: 11px; color: var(--legal); opacity: 1; }
+.statusbar {
+  padding: 8px var(--gutter) 9px;
+  background: var(--masthead);
+  border-top: 1px solid var(--masthead-border);
+}
+.status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 15px; }
+.statusbar .legal { margin: 3px 0 0; font-size: 11px; color: var(--legal); }
+.update-message { min-width: 0; flex: 1 1 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button.log-toggle {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+/* The Log toggle's arrow points up (closed) and down (open). */
+button.log-toggle .chevron { transform: rotate(-135deg); margin-top: 3px; }
+button.log-toggle.on .chevron { transform: rotate(45deg); margin-top: -3px; }
+button.log-toggle.on { border-color: var(--accent); }
+
+/* ─── Log panel (D-31) ─── */
+.log-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+}
+.log-panel[hidden] { display: none; }
+.log-resize {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  z-index: 1;
+}
+.log-resize::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 44px;
+  height: 4px;
+  margin-left: -22px;
+  border-radius: 2px;
+  background: var(--border);
+}
+.log-resize:hover::after, .log-resize:focus-visible::after { background: var(--accent); }
+.log-resize:focus-visible { outline: none; }
+.log-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px var(--gutter) 6px;
+}
+.log-actions { margin-left: auto; display: flex; gap: 6px; }
+button.small-button { padding: 4px 10px; font-size: 0.8rem; }
+.log-lines {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--gutter) 10px;
+  font: 12px/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+.log-line { display: flex; gap: 12px; padding: 1px 0; }
+.log-time { flex: 0 0 auto; color: var(--muted); }
+.log-text { min-width: 0; overflow-wrap: anywhere; }
+.log-line.warn .log-text { color: var(--error); }
+.log-line.error .log-text { color: var(--error); font-weight: 600; }
+.log-detail {
+  margin: 2px 0 4px;
+  padding: 4px 8px;
+  border-left: 2px solid var(--border);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  font-weight: 400;
+  color: var(--muted);
+}
 .engine { display: inline-flex; align-items: center; gap: 8px; color: var(--engine); }
 .engine strong { font-weight: 550; }
 .indicator { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
 .indicator.ready { background: var(--ready); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ready) 12%, transparent); }
 .drawer {
-  position: fixed; inset: 66px 10px 10px auto; width: var(--drawer-width); z-index: 2;
+  position: fixed; inset: 66px 10px calc(var(--bottom-stack, 0px) + 10px) auto; width: var(--drawer-width); z-index: 2;
   border: 1px solid var(--border); border-radius: 18px;
   background: var(--panel); overflow-y: auto; box-shadow: var(--drawer-shadow);
 }
 .drawer-body { display: grid; padding: 18px; gap: 13px; }
 .drawer-head { gap: 8px; }
-.drawer-head h2 { margin: 0; }
-.settings-toggle { justify-self: start; }
+.drawer-head h2 { margin: 0; font-size: 1.35rem; }
+/* History search: a small Clear button appears inside the box once there's text. */
+.search-box input { min-width: 0; }
+button.search-clear { padding: 0 12px; font-size: 0.85rem; white-space: nowrap; }
+/* Keep history + Clear history: one row in their own box. */
+.history-controls { display: grid; gap: 8px; }
+.drawer-body > .history-controls {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.history-controls-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.history-controls-row button { white-space: nowrap; }
+.history-controls p { margin: 0; }
+.masthead-actions { display: flex; gap: 8px; }
+.drawer-body > .settings { display: grid; gap: 8px; }
+.drawer-body > .settings .label { margin-bottom: 0; font-size: 1rem; }
+.drawer-body > .settings .folder-path { margin: 0; }
+.history-controls .check { margin: 0; }
+/* Theme picker: three joined buttons; the radio inputs stay for keyboard and screen readers. */
+.segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; justify-self: start; }
+.segmented label { position: relative; padding: 7px 16px; cursor: pointer; color: var(--text); }
+.segmented label + label { border-left: 1px solid var(--border); }
+.segmented label.selected { background: var(--accent); color: var(--accent-text); }
+.segmented input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.segmented label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (min-width: 1100px) {
   .drawer-open main { margin-right: var(--drawer-width); }
 }
