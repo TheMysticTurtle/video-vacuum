@@ -57,11 +57,23 @@ pub struct Settings {
     /// by v2.0.0, which is read as on (no format version change needed).
     #[serde(default = "on")]
     pub keep_history: bool,
+    /// Light, dark, or follow Windows (D-30). Missing in older files = system.
+    #[serde(default)]
+    pub theme: Theme,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Theme {
+    #[default]
+    System,
+    Light,
+    Dark,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Settings { default_folder: None, keep_history: true }
+        Settings { default_folder: None, keep_history: true, theme: Theme::System }
     }
 }
 
@@ -146,6 +158,11 @@ impl Store {
     /// Turning history off keeps the existing list; clearing it is separate.
     pub fn set_keep_history(&mut self, keep: bool) -> Result<(), String> {
         self.settings.keep_history = keep;
+        self.save_settings()
+    }
+
+    pub fn set_theme(&mut self, theme: Theme) -> Result<(), String> {
+        self.settings.theme = theme;
         self.save_settings()
     }
 
@@ -267,6 +284,17 @@ mod tests {
     }
 
     #[test]
+    fn theme_is_saved_and_read_back() {
+        let dir = temp_dir("theme");
+        let mut store = Store::open(dir.clone());
+        store.set_theme(Theme::Dark).unwrap();
+        assert_eq!(Store::open(dir.clone()).settings.theme, Theme::Dark);
+        let text = fs::read_to_string(dir.join("settings.json")).unwrap();
+        assert!(text.contains(r#""theme": "dark""#), "{text}");
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
     fn entries_can_be_removed_and_history_cleared() {
         let dir = temp_dir("remove");
         let mut store = Store::open(dir.clone());
@@ -307,6 +335,7 @@ mod tests {
         fs::write(dir.join("settings.json"), r#"{"version": 1, "defaultFolder": "D:\\Clips"}"#).unwrap();
         let store = Store::open(dir.clone());
         assert!(store.settings.keep_history);
+        assert_eq!(store.settings.theme, Theme::System);
         assert_eq!(store.settings.default_folder.as_deref(), Some(r"D:\Clips"));
         let _ = fs::remove_dir_all(dir);
     }

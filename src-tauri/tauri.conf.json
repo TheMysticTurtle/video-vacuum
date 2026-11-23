@@ -15,7 +15,7 @@
         "label": "main",
         "title": "Video Vacuum",
         "width": 1000,
-        "height": 740,
+        "height": 960,
         "minWidth": 720,
         "minHeight": 560,
         "center": true

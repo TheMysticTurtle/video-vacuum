@@ -53,7 +53,7 @@ cd src-tauri && cargo clippy --all-targets -- -D warnings && cargo test
 npm run check   # tsc --noEmit
 ```
 
-The Rust tests (19) cover:
+The Rust tests (20) cover:
 - link cleanup (12 good forms, 9 bad)
 - file-name safety
 - progress-line parsing
@@ -64,6 +64,7 @@ The Rust tests (19) cover:
 - history/settings save, reload and newer-file protection
 - removing an entry, clearing history, history turned off (nothing written,
   but the session can still open the file), v2.0.0 settings reading as "keep history"
+  and "system" theme, the theme saved and read back
 - PATH variable expansion
 - winget detection
 
@@ -115,7 +116,17 @@ WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9223" \
   The `yt-dlp --version` call (~0.9 s, a separate process) runs afterwards and
   never gates lookups.
 - **`std::fs::rename` replaces an existing file on Windows**, which makes the temp-then-rename save atomic.
-- **WebView2 `prefers-color-scheme`** follows the Windows app theme, so light/dark needs no code.
+- **WebView2 `prefers-color-scheme`** follows the Windows app theme, so "System" needs no code.
+- **Theme (D-30):**
+  - Colors use CSS `light-dark()` plus `color-scheme`. Chromium supports it
+    from version 123; WebView2 is evergreen and was runtime 157 on the dev PC.
+  - `data-theme="light|dark"` on `<html>` forces a theme.
+  - The title bar follows `Window::set_theme`, called from Rust, so the page
+    needs no `core:window:allow-set-theme` permission.
+- **Window size (D-30):** `tauri.conf.json` asks for 1000 x 960 (measured: a
+  looked-up video plus every save option, no scrolling). `fit_window_to_screen`
+  in `lib.rs` shrinks it to `Monitor::work_area` on smaller screens. Tested
+  with a 3000 px tall window: it came out exactly the monitor's usable height.
 
 ## 6. Releasing (GitHub Actions)
 

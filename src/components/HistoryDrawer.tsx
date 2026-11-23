@@ -1,28 +1,28 @@
 // The History drawer on the right: the masthead's "History" button opens it.
-// Inside: Settings (default folder, keep history on/off, clear history), a
-// search box, and every past download, each with Remove. Removing or clearing
-// only forgets the entries; the downloaded files are never touched (D-28).
+// Inside: "Keep download history" and "Clear history…" right above the list
+// (the same controls as in Settings, sharing one saved value; D-30), a search
+// box, and every past download, each with Remove. Removing or clearing only
+// forgets entries; downloaded files are never touched (D-28).
 // Files that were moved or deleted collapse and grey out; expanding one says
 // where it used to be.
 
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { useEffect, useMemo, useState } from "react";
 import { api, errorText, type HistoryItem, type SettingsView } from "../api";
 import { formatBytes, formatWhen } from "../format";
+import HistoryControls from "./HistoryControls";
 
 interface Props {
   open: boolean;
   onToggle: () => void;
-  refreshKey: number; // bumps after each finished download
+  refreshKey: number; // bumps after each finished download and after clearing
   settings: SettingsView | null;
   onSettingsChange: (settings: SettingsView) => void;
+  onHistoryCleared: () => void;
 }
 
-export default function HistoryDrawer({ open, onToggle, refreshKey, settings, onSettingsChange }: Props) {
+export default function HistoryDrawer({ open, onToggle, refreshKey, settings, onSettingsChange, onHistoryCleared }: Props) {
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [search, setSearch] = useState("");
-  const [showSettings, setShowSettings] = useState(false);
-  const [confirmClear, setConfirmClear] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
@@ -53,46 +53,6 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
     });
   }, [items, search]);
 
-  async function changeFolder() {
-    const folder = await openDialog({ directory: true, defaultPath: settings?.defaultFolder, title: "Default download folder" });
-    if (typeof folder !== "string") return;
-    try {
-      onSettingsChange(await api.setDefaultFolder(folder));
-      setMessage("");
-    } catch (e) {
-      setMessage(errorText(e));
-    }
-  }
-
-  async function resetFolder() {
-    try {
-      onSettingsChange(await api.setDefaultFolder(null));
-    } catch (e) {
-      setMessage(errorText(e));
-    }
-  }
-
-  async function setKeepHistory(keep: boolean) {
-    try {
-      onSettingsChange(await api.setKeepHistory(keep));
-      setMessage("");
-    } catch (e) {
-      setMessage(errorText(e));
-    }
-  }
-
-  async function clearHistory() {
-    setConfirmClear(false);
-    try {
-      await api.clearHistory();
-      setItems([]);
-      setExpanded(null);
-      setMessage("");
-    } catch (e) {
-      setMessage(errorText(e));
-    }
-  }
-
   async function remove(id: string) {
     try {
       await api.removeHistoryEntry(id);
@@ -120,62 +80,13 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
             <h2>Download history</h2>
             <button type="button" className="secondary" onClick={onToggle}>Close</button>
           </div>
-          <button type="button" className="link settings-toggle" onClick={() => setShowSettings(!showSettings)}
-            aria-expanded={showSettings}>Settings</button>
-
-          {showSettings && settings && (
-            <div className="settings">
-              <span className="label">Default download folder</span>
-              <p className="folder-path" title={settings.defaultFolder}>
-                {settings.defaultFolder}
-              </p>
-              <div className="row">
-                <button type="button" className="secondary" onClick={changeFolder}>
-                  Change…
-                </button>
-                {settings.isCustom && (
-                  <button type="button" className="secondary" onClick={resetFolder}>
-                    Use Downloads
-                  </button>
-                )}
-              </div>
-
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={settings.keepHistory}
-                  onChange={(e) => setKeepHistory(e.target.checked)}
-                />
-                Keep download history
-              </label>
-
-              {confirmClear ? (
-                <div className="confirm" role="alert">
-                  <p className="small">Clear all history? This can't be undone. Your downloaded files stay where they are.</p>
-                  <div className="row">
-                    <button type="button" className="danger" onClick={clearHistory}>
-                      Clear
-                    </button>
-                    <button type="button" className="secondary" onClick={() => setConfirmClear(false)}>
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => setConfirmClear(true)}
-                  disabled={!items.length}
-                >
-                  Clear history…
-                </button>
-              )}
-            </div>
-          )}
-
-          {settings && !settings.keepHistory && (
-            <p className="muted small">History is off. New downloads aren't recorded.</p>
+          {settings && (
+            <HistoryControls
+              settings={settings}
+              onSettingsChange={onSettingsChange}
+              onCleared={onHistoryCleared}
+              canClear={items.length > 0}
+            />
           )}
 
           <input

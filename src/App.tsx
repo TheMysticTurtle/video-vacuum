@@ -1,9 +1,11 @@
-// Video Vacuum's window: Link → Video → Save as → progress, plus the History drawer.
+// Video Vacuum's window: Link → Video → Save as → progress, plus the History
+// and Settings panels (one open at a time).
 
 import { useEffect, useRef, useState } from "react";
 import { api, errorText, MP3_DEFAULT_KBPS, type DownloadEvent, type SettingsView, type ToolsStatus, type VideoInfo } from "./api";
 import DownloadStatus, { type DownloadState } from "./components/DownloadStatus";
 import HistoryDrawer from "./components/HistoryDrawer";
+import SettingsDrawer from "./components/SettingsDrawer";
 // The skinny banner, made from media/ by tools/make-brand-images.ps1.
 import headerBanner from "./assets/header-banner.png";
 import LinkBox from "./components/LinkBox";
@@ -34,7 +36,7 @@ export default function App() {
     folder: "",
   });
   const [download, setDownload] = useState<DownloadState>({ phase: "idle" });
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [panel, setPanel] = useState<"history" | "settings" | null>(null);
   const [historyKey, setHistoryKey] = useState(0);
   const [update, setUpdate] = useState({ busy: false, message: "" });
 
@@ -42,6 +44,16 @@ export default function App() {
     api.checkTools().then(setTools).catch((e) => setToolsMessage(errorText(e)));
     api.getSettings().then(setSettings).catch(() => undefined);
   }, []);
+
+  // The page's colors follow the saved theme; Rust sets the window frame (D-30).
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings && settings.theme !== "system") root.dataset.theme = settings.theme;
+    else delete root.dataset.theme;
+  }, [settings?.theme]);
+
+  const togglePanel = (which: "history" | "settings") => setPanel((open) => (open === which ? null : which));
+  const historyChanged = () => setHistoryKey((k) => k + 1); // any open list re-reads
 
   const running = download.phase === "starting" || download.phase === "downloading" || download.phase === "finishing";
 
@@ -65,7 +77,7 @@ export default function App() {
   }
 
   function onEvent(event: DownloadEvent) {
-    if (event.kind === "done") setHistoryKey((k) => k + 1); // the drawer re-reads its list
+    if (event.kind === "done") historyChanged();
     setDownload((current) => {
       const jobId = "jobId" in current && current.jobId ? current.jobId : "";
       const fileName = "fileName" in current ? current.fileName : "";
@@ -160,13 +172,19 @@ export default function App() {
   }
 
   return (
-    <div className={historyOpen ? "layout drawer-open" : "layout"}>
+    <div className={panel ? "layout drawer-open" : "layout"}>
       <header className="masthead">
         <div className="brand"><img src={headerBanner} alt="Video Vacuum" /></div>
-        <button type="button" className="secondary history-toggle" aria-expanded={historyOpen}
-          aria-controls="download-history" onClick={() => setHistoryOpen(!historyOpen)}>
-          <span aria-hidden="true">◷</span> History
-        </button>
+        <div className="masthead-actions">
+          <button type="button" className="secondary history-toggle" aria-expanded={panel === "settings"}
+            aria-controls="settings-panel" onClick={() => togglePanel("settings")}>
+            <span aria-hidden="true">⚙</span> Settings
+          </button>
+          <button type="button" className="secondary history-toggle" aria-expanded={panel === "history"}
+            aria-controls="download-history" onClick={() => togglePanel("history")}>
+            <span aria-hidden="true">◷</span> History
+          </button>
+        </div>
       </header>
       <main>
         {!tools && toolsMessage && <p className="message error" role="alert">{toolsMessage}</p>}
@@ -229,11 +247,19 @@ export default function App() {
       </main>
 
       <HistoryDrawer
-        open={historyOpen}
-        onToggle={() => setHistoryOpen(!historyOpen)}
+        open={panel === "history"}
+        onToggle={() => togglePanel("history")}
         refreshKey={historyKey}
         settings={settings}
         onSettingsChange={changeSettings}
+        onHistoryCleared={historyChanged}
+      />
+      <SettingsDrawer
+        open={panel === "settings"}
+        onClose={() => setPanel(null)}
+        settings={settings}
+        onSettingsChange={changeSettings}
+        onHistoryCleared={historyChanged}
       />
     </div>
   );

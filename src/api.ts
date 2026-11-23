@@ -52,7 +52,11 @@ export interface SettingsView {
   defaultFolder: string;
   isCustom: boolean;
   keepHistory: boolean; // false = new downloads aren't added to history
+  theme: Theme;
 }
+
+/** "system" follows Windows. Saved in settings.json (D-30). */
+export type Theme = "system" | "light" | "dark";
 
 // Only the choices: the video itself is the one the app just looked up (Rust keeps it).
 export interface DownloadRequest {
@@ -92,6 +96,7 @@ export const api = {
   getSettings: () => invoke<SettingsView>("get_settings"),
   setDefaultFolder: (folder: string | null) => invoke<SettingsView>("set_default_folder", { folder }),
   setKeepHistory: (keep: boolean) => invoke<SettingsView>("set_keep_history", { keep }),
+  setTheme: (theme: Theme) => invoke<SettingsView>("set_theme", { theme }),
 };
 
 /** Commands reject with a plain string message. */

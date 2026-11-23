@@ -263,6 +263,13 @@ selectable bitrate?" → "yes". MP3 plays everywhere.
   says "original", so people can pick.
 - YouTube's audio is ~130-160 kbps, so 192 is the recommended default; 320
   only makes the file bigger.
+  **Corrected 2026-11-23:** "320 only makes the file bigger" overstated it.
+  Converting adds a little loss at any bitrate (FFmpeg wiki, "Encode/
+  HighQualityAudio"); a higher bitrate keeps that smaller. Hydrogenaudio's
+  LAME guide calls ~190 kbps normally transparent and V0 / 320 the maximum.
+  Measured on a 147 kbps Opus source: 192 kbps = 1.4 MB/min, V0 = 1.9,
+  320 = 2.4. Owner, asked whether 320 is worth it: "lets leave it where it
+  is", so 192 stays the default and 320 stays on the menu.
 - The encoder is LAME (libmp3lame) inside the FFmpeg that the tools installer
   already sets up. Nothing new to install or ship.
 - The page can only send a bitrate from the fixed list; the backend refuses
@@ -298,3 +305,35 @@ account the project is published on.
 that's my other account. this is published on TheMysticTurtle." This settles
 the open "LICENSE holder name" question. Commits made before this keep their
 old author name; they weren't rewritten.
+
+### D-30 ✅ A Settings panel, a theme choice, history controls in both places, a taller window (2026-11-23)
+**Decision:**
+- A **Settings** button next to History opens its own panel (one panel is
+  open at a time): default download folder, **Theme** (System / Light / Dark,
+  default System) and the history controls.
+- **Keep download history** and **Clear history…** also sit right above the
+  list in the History panel. Both copies are one component that reads the app's
+  single `settings` state and saves through the same command, so they always
+  show the same saved value (`settings.json` → `keepHistory`).
+- Section titles are 14 px instead of 12 px; the description opens in a
+  bordered box; Show / Hide description is a button with an arrow.
+- The default window is 1000 x 960, measured to show a looked-up video and
+  every save option without scrolling. On a smaller screen it shrinks to the
+  monitor's usable area at startup and is centered.
+- Owner, 2026-11-23: "put settings in its own button next to history. Where it
+  has default download folder and light/dark theme … leave the keep downloaded
+  history/clear history exposed right over the actual history … make sure both
+  controls adjust the exact same value/setting in app data."
+**How:**
+- `settings.json` gets `"theme": "system" | "light" | "dark"` (missing = system,
+  so older files load unchanged; format version stays 1).
+- Rust applies it to the window frame and title bar with `Window::set_theme`
+  (Tauri 2, `None` = follow Windows) at startup and on change. Because Rust
+  does it, the page needs no extra window permission.
+- The page sets `data-theme` on `<html>`. Colors are written once with CSS
+  `light-dark()` and switched by `color-scheme`, which also switches the
+  scrollbars, dropdown lists and checkboxes.
+- The window fits itself to the screen with Tauri's `Monitor::work_area`.
+**Consequence:** the History panel's old "Settings" link and its folder
+setting are gone; the folder lives in Settings only.
+**Supersedes:** the History → Settings layout in D-28.

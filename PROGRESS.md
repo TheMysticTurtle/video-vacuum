@@ -2,6 +2,60 @@
 
 Newest on top. Forward-looking items live in `ROADMAP.md`; the why lives in `docs/DECISIONS.md`.
 
+### Session 2026-11-23 — owner testing, the 403, Settings panel, v2.1.0 installer
+**Goal:** the owner tries the build before anything reaches `main`, then a
+Settings panel, theme choice and layout polish from their feedback.
+
+**What happened / what we did** (all on `feature/history-privacy-mp3`):
+- **Owner tried the build in a test window started from Claude** and got
+  "YouTube refused the download (error 403)" on one Short; "critical error. do
+  not merge this back into main".
+  - Local `main` had already been merged after Claude's own tests. It was
+    moved back to `origin/main` (`4f12dc4`) without touching files.
+  - New standing rule (CLAUDE.md, memory, vault Software Project Standard):
+    "do not auto merge branches into my stable main until I test it myself and
+    tell you it's good".
+- **The 403 didn't reproduce:** yt-dlp with the app's full argument list
+  downloaded that Short (329 MB, 4K VP9 in MP4) from the saved lookup and from
+  the link.
+- **Version 2.1.0** (`a76389a`) and a real installer. The owner installed it:
+  "it works now".
+- **MP3 bitrate question** (D-27 correction):
+  - Measured on the Short's 147 kbps Opus: 192 kbps = 1.4 MB/min, V0 = 1.9,
+    320 = 2.4.
+  - Hydrogenaudio calls ~190 normally transparent.
+  - Owner: "lets leave it where it is". 192 stays the default; the README and
+    D-27 wording were corrected.
+- **Settings panel and polish** (D-30):
+  - A Settings button with the folder, Theme (System / Light / Dark, saved;
+    Rust sets the title bar) and the history controls.
+  - Keep history / Clear history also above the History list, as one shared
+    component on one saved value.
+  - Section titles 12 → 14 px.
+  - A bordered description box with an arrow toggle button.
+  - A 1000 x 960 window that shrinks to fit smaller screens.
+
+**Test results:**
+- clippy `-D warnings` clean, `cargo test` 20 passed (new: theme saved and read
+  back; old settings read as "system"), tsc clean.
+- Hidden window (own `…devtest` data folder):
+  - Settings shows folder / theme / history.
+  - Light forced while Windows was dark (and Dark while light): background,
+    scrollbars and controls switched, and settings.json saved `"theme"` each time.
+  - Unticking Keep history in Settings showed unticked in History, and the
+    reverse; settings.json followed both.
+  - Clear from Settings: Cancel kept the entry; Clear emptied the History list,
+    and the file stayed on disk.
+  - Description: arrow and text toggle, 1 px border, both themes.
+  - Window: at 1000 x 960 with the owner's video loaded the page is exactly
+    960 px, with no scrollbar. A 3000 px window shrank to 1353 px, the
+    monitor's usable height minus the frame.
+
+**Where we landed:** on the feature branch, not merged. A new v2.1.0 installer
+is built for the owner.
+
+**Next:** the owner tests the installer; merge, push and release only after their OK.
+
 ### Session 2026-11-22 (night) — history privacy, MP3, the author name
 **Goal:** owner: "there should be a clear button to just delete it all right
 away. with an option to turn it off … And a way to delete individual

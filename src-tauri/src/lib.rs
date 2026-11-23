@@ -21,7 +21,7 @@ use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
 
 use download::{DownloadEvent, DownloadRequest, JobControl};
-use store::{HistoryEntry, Store};
+use store::{HistoryEntry, Store, Theme};
 use tools::{Tools, ToolsStatus};
 use ytdlp::{Lookup, VideoInfo};
 
@@ -221,6 +221,7 @@ struct SettingsView {
     is_custom: bool,
     /// False = new downloads aren't added to history.
     keep_history: bool,
+    theme: Theme,
 }
 
 fn settings_view(app: &AppHandle, state: &AppState) -> SettingsView {
@@ -231,7 +232,12 @@ fn settings_view(app: &AppHandle, state: &AppState) -> SettingsView {
         .download_dir()
         .map(|dir| dir.display().to_string())
         .unwrap_or_default();
-    SettingsView { is_custom: chosen.is_some(), default_folder: chosen.unwrap_or(system), keep_history: settings.keep_history }
+    SettingsView {
+        is_custom: chosen.is_some(),
+        default_folder: chosen.unwrap_or(system),
+        keep_history: settings.keep_history,
+        theme: settings.theme,
+    }
 }
 
 #[tauri::command]
@@ -258,6 +264,53 @@ fn set_keep_history(keep: bool, app: AppHandle, state: State<'_, AppState>) -> R
     Ok(settings_view(&app, &state))
 }
 
+/// The window's own theme (title bar and frame). The page switches its colors
+/// itself from the same setting. Tauri: `Window::set_theme`, None = follow Windows.
+fn apply_theme(app: &AppHandle, theme: Theme) {
+    let theme = match theme {
+        Theme::System => None,
+        Theme::Light => Some(tauri::Theme::Light),
+        Theme::Dark => Some(tauri::Theme::Dark),
+    };
+    if let Some(window) = app.get_webview_window("main") {
+        if let Err(err) = window.set_theme(theme) {
+            eprintln!("couldn't set the window theme: {err}");
+        }
+    }
+}
+
+#[tauri::command]
+fn set_theme(theme: Theme, app: AppHandle, state: State<'_, AppState>) -> Result<SettingsView, String> {
+    lock(&state.store).set_theme(theme)?;
+    apply_theme(&app, theme);
+    Ok(settings_view(&app, &state))
+}
+
+/// The default window (tauri.conf.json, 1000 x 960) shows a looked-up video
+/// and all the save options without scrolling. On a smaller screen, shrink it
+/// to the screen's usable area (minus the taskbar) and center it (D-30).
+fn fit_window_to_screen(app: &AppHandle) {
+    let Some(window) = app.get_webview_window("main") else { return };
+    let (Ok(Some(monitor)), Ok(outer), Ok(inner)) = (window.current_monitor(), window.outer_size(), window.inner_size())
+    else {
+        return;
+    };
+    let area = monitor.work_area().size;
+    if outer.width <= area.width && outer.height <= area.height {
+        return;
+    }
+    let frame_w = outer.width.saturating_sub(inner.width);
+    let frame_h = outer.height.saturating_sub(inner.height);
+    let size = tauri::PhysicalSize::new(
+        inner.width.min(area.width.saturating_sub(frame_w)),
+        inner.height.min(area.height.saturating_sub(frame_h)),
+    );
+    // The window's minimum size (720 x 560) still applies.
+    if window.set_size(size).is_ok() {
+        let _ = window.center();
+    }
+}
+
 // ─── Start ──────────────────────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -267,14 +320,18 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
+            let store = Store::open(data_dir);
+            let theme = store.settings.theme;
             app.manage(AppState {
                 // Found before the window opens (a quick folder check), so an
                 // early paste never finds the tools "missing".
                 tools: Mutex::new(Tools::find()),
                 jobs: Mutex::new(HashMap::new()),
-                store: Mutex::new(Store::open(data_dir)),
+                store: Mutex::new(store),
                 lookup: Mutex::new(None),
             });
+            apply_theme(app.handle(), theme);
+            fit_window_to_screen(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -293,6 +350,7 @@ pub fn run() {
             get_settings,
             set_default_folder,
             set_keep_history,
+            set_theme,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Video Vacuum");

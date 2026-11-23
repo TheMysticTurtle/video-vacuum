@@ -31,11 +31,14 @@ the tools it uses all need Windows 10 or newer.
 3. Pick a **Format**, **Quality**, **File name** and **Folder**, then **Download**.
    You can cancel at any time; nothing half-finished is left behind.
 4. **History** (the button at the top) opens a panel listing everything you've
-   downloaded, with a search box. Files you've moved or deleted are greyed out.
-   Click one to see where it used to be. **Remove** takes one entry off the list.
-5. **Settings** in that panel sets your default download folder, can turn
-   history off, and has **Clear history…**. Removing or clearing history never
-   deletes your downloaded files.
+   downloaded, with a search box. **Keep download history** and
+   **Clear history…** sit right above the list. Files you've moved or deleted
+   are greyed out; click one to see where it used to be. **Remove** takes one
+   entry off the list. Removing or clearing history never deletes your
+   downloaded files.
+5. **Settings** (next to History) sets your default download folder, the
+   **Theme** (System, Light or Dark; System follows Windows), and has the same
+   history controls.
 
 | Format | What you get |
 |---|---|
@@ -48,8 +51,9 @@ the tools it uses all need Windows 10 or newer.
 Nothing is re-encoded except MP3: YouTube sends video and audio separately,
 and ffmpeg just packs them into one file. YouTube has no MP3, so that one is
 converted, which loses a little quality. YouTube's audio is only about
-130-160 kbps to begin with, so above 192 kbps the file gets bigger without
-sounding better. Pick M4A for the original.
+110-160 kbps to begin with; at 192 kbps the MP3 sounds like the original for
+most listeners, and 320 kbps adds extra margin at about two-thirds more file
+size. Pick M4A for the original.
 
 **If downloads start failing,** YouTube probably changed something. Click
 **Update yt-dlp** at the bottom of the window.

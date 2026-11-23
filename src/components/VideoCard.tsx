@@ -37,10 +37,21 @@ export default function VideoCard({ video }: { video: VideoInfo }) {
       </div>
       {video.description && (
         <div className="description">
-          <button type="button" className="link" onClick={() => setShowDescription(!showDescription)}>
+          <button
+            type="button"
+            className="secondary disclosure"
+            onClick={() => setShowDescription(!showDescription)}
+            aria-expanded={showDescription}
+            aria-controls="video-description"
+          >
+            <span className="chevron" aria-hidden="true" />
             {showDescription ? "Hide description" : "Show description"}
           </button>
-          {showDescription && <p className="description-text">{video.description}</p>}
+          {showDescription && (
+            <p id="video-description" className="description-text">
+              {video.description}
+            </p>
+          )}
         </div>
       )}
     </section>

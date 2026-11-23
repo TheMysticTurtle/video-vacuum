@@ -31,7 +31,7 @@ body {
 
 .label {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -222,8 +222,31 @@ progress {
   overflow-wrap: anywhere;
   max-height: 220px;
   overflow-y: auto;
-  margin: 8px 0 0;
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--field);
   color: var(--muted);
+}
+/* Show / Hide description: a small button with an arrow that turns down when open. */
+button.disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+.chevron {
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg); /* points right */
+  transition: transform 0.15s ease;
+}
+button.disclosure[aria-expanded="true"] .chevron {
+  transform: rotate(45deg); /* points down */
 }
 
 .message {
@@ -275,14 +298,14 @@ footer {
   overflow-wrap: anywhere;
   font-size: 0.85rem;
 }
-.settings .check {
+.check {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 14px 0 10px;
   cursor: pointer;
 }
-.settings .check input {
+.check input {
   width: auto;
   margin: 0;
   padding: 0;
@@ -369,55 +392,40 @@ button.danger:hover:not(:disabled) {
    dark values are the "dark studio" palette. The hero keeps its own dark
    stage in both modes, because it frames artwork. */
 :root {
+  /* Theme (D-30): "System" follows Windows; the Settings panel can force light
+     or dark by setting data-theme on <html>. color-scheme also switches the
+     native parts (scrollbars, dropdown lists, checkboxes). Each color is
+     written once as light-dark(light, dark). */
   color-scheme: light dark;
-  --bg: #f4f5f9;
-  --panel: #ffffff;
-  --field: #ffffff;
-  --text: #1b1d26;
-  --muted: #5d6475;
-  --border: #d6d9e3;
-  --accent: #4f57c9;
-  --accent-hover: #434ab3;
-  --accent-text: #ffffff;
-  --error: #9a5b00;
-  --glow: #e3e6fb;
-  --masthead: #ffffff;
-  --masthead-border: #e1e3ea;
-  --card-border: #d6d9e3;
-  --card-shadow: 0 15px 40px #1b1d2614;
-  --label: #4b5163;
-  --placeholder: #8a90a0;
-  --legal: #6b7182;
-  --engine: #3f4556;
-  --ready: #2f9d78;
-  --drawer-shadow: -10px 12px 52px #1b1d2624;
+  --bg: light-dark(#f4f5f9, #101217);
+  --panel: light-dark(#ffffff, #1a1d25);
+  --field: light-dark(#ffffff, #101319);
+  --text: light-dark(#1b1d26, #eef0f8);
+  --muted: light-dark(#5d6475, #a5acbd);
+  --border: light-dark(#d6d9e3, #373c4a);
+  --accent: light-dark(#4f57c9, #bec4ff);
+  --accent-hover: light-dark(#434ab3, #d7daff);
+  --accent-text: light-dark(#ffffff, #181a31);
+  --error: light-dark(#9a5b00, #ffbd83);
+  --glow: light-dark(#e3e6fb, #1b1f31);
+  --masthead: light-dark(#ffffff, #13151c);
+  --masthead-border: light-dark(#e1e3ea, #2a2e39);
+  --card-border: light-dark(#d6d9e3, #424858);
+  --card-shadow: 0 15px 40px light-dark(#1b1d2614, #05060930);
+  --label: light-dark(#4b5163, #c1c7d9);
+  --placeholder: light-dark(#8a90a0, #9097a9);
+  --legal: light-dark(#6b7182, #949bad);
+  --engine: light-dark(#3f4556, #c4cad5);
+  --ready: light-dark(#2f9d78, #84d8b8);
+  --drawer-shadow: -10px 12px 52px light-dark(#1b1d2624, #0007);
   --gutter: clamp(16px, 4vw, 48px);
   --drawer-width: min(350px, 94vw);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #101217;
-    --panel: #1a1d25;
-    --field: #101319;
-    --text: #eef0f8;
-    --muted: #a5acbd;
-    --border: #373c4a;
-    --accent: #bec4ff;
-    --accent-hover: #d7daff;
-    --accent-text: #181a31;
-    --error: #ffbd83;
-    --glow: #1b1f31;
-    --masthead: #13151c;
-    --masthead-border: #2a2e39;
-    --card-border: #424858;
-    --card-shadow: 0 15px 40px #05060930;
-    --label: #c1c7d9;
-    --placeholder: #9097a9;
-    --legal: #949bad;
-    --engine: #c4cad5;
-    --ready: #84d8b8;
-    --drawer-shadow: -10px 12px 52px #0007;
-  }
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 .layout {
@@ -485,7 +493,20 @@ footer .legal { font-size: 11px; color: var(--legal); opacity: 1; }
 .drawer-body { display: grid; padding: 18px; gap: 13px; }
 .drawer-head { gap: 8px; }
 .drawer-head h2 { margin: 0; }
-.settings-toggle { justify-self: start; }
+.masthead-actions { display: flex; gap: 8px; }
+.drawer-body > .settings { display: grid; gap: 8px; }
+.drawer-body > .settings .label { margin-bottom: 0; }
+.drawer-body > .settings .folder-path { margin: 0; }
+.history-controls { display: grid; gap: 8px; justify-items: start; }
+.history-controls .check { margin: 0; }
+.history-controls .confirm { justify-self: stretch; }
+/* Theme picker: three joined buttons; the radio inputs stay for keyboard and screen readers. */
+.segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; justify-self: start; }
+.segmented label { position: relative; padding: 7px 16px; cursor: pointer; color: var(--text); }
+.segmented label + label { border-left: 1px solid var(--border); }
+.segmented label.selected { background: var(--accent); color: var(--accent-text); }
+.segmented input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.segmented label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (min-width: 1100px) {
   .drawer-open main { margin-right: var(--drawer-width); }
 }
