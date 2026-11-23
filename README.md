@@ -6,8 +6,6 @@ quality, name and folder, click **Download**.
 It runs on your computer using [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 Nothing is uploaded anywhere.
 
-<p align="center"><img src="docs/images/screenshots/video-loaded.png" alt="Video Vacuum with a video looked up: thumbnail, title and creator, then format, quality, file name and folder" width="640"></p>
-
 ## Use it responsibly
 
 Only download videos you have the right to save: your own uploads, openly
@@ -66,6 +64,8 @@ them on YouTube.
 
 Pick a **Format**, **Quality**, **File name** and **Folder**, then **Download**.
 You can cancel at any time; nothing half-finished is left behind.
+
+<p align="center"><img src="docs/images/screenshots/video-loaded.png" alt="Video Vacuum with a video looked up: thumbnail, title and creator, then format, quality, file name and folder" width="560"></p>
 
 ### 3. History
 
