@@ -88,9 +88,24 @@ Settings panel, theme choice and layout polish from their feedback.
 - Then "lets merge and push": merged `feature/history-privacy-mp3` into
   `main` with `--no-ff` and pushed `main`.
 
-**Where we landed:** v2.1.0 on `main`, pushed, not released.
+**README additions** (owner's wording requests; `b8de617`):
+- "Use it responsibly" moved above Install.
+- A new "Windows may warn you about the installer" part: unsigned code and a
+  new release, and releases built by GitHub Actions from the public repo. It
+  invites readers to inspect the repo or have an AI review it.
+- A Credits section for "Me at the zoo" by jawed, as a tribute.
 
-**Next:** the owner runs the Release workflow for v2.1.0.
+**Released:** the owner said "Push and release 2.1.0".
+- Pushed `main`, then ran the Release workflow (run 45275597949). Every step
+  passed in 4 minutes thanks to the Rust cache.
+- Published [Video Vacuum v2.1.0](https://github.com/TheMysticTurtle/video-vacuum/releases/tag/v2.1.0),
+  marked Latest. Tag `v2.1.0` at `b8de617`; installer
+  `Video.Vacuum_2.1.0_x64-setup.exe`, 2.7 MB.
+- The README's example installer name is now 2.1.0.
+
+**Where we landed:** v2.1.0 released.
+
+**Next:** nothing queued; the owner picks from the backlog.
 
 ### Session 2026-11-22 (night) — history privacy, MP3, the author name
 **Goal:** owner: "there should be a clear button to just delete it all right

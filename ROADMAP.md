@@ -25,7 +25,7 @@
 | `[x]` | **Owner tested the v2.1.0 installer** (2026-11-23: "it's beautiful! seems to work great") and asked to merge and push | done |
 | `[x]` | **README screenshots**: the owner's five demo images (start, video loaded, History, Settings, Log) in `docs/images/screenshots/`, with a step-by-step "Use it" | done |
 | `[x]` | **Merged into `main` and pushed** (2026-11-23) | done |
-| `[?]` | **Release v2.1.0**: run the Release workflow (the README on GitHub already describes 2.1.0) | waiting on the owner |
+| `[x]` | **Release v2.1.0** published 2026-11-23 by the Release workflow (run 45275597949, 4 min with the Rust cache, every step passed); tag `v2.1.0` at `b8de617`; installer `Video.Vacuum_2.1.0_x64-setup.exe` 2.7 MB; marked Latest | done |
 | `[?]` | **SmartScreen "incorrect warning" report** for the installer link. Filled in 2026-11-22 except name, email, street address and the CAPTCHA, which only the owner can do; then Submit | waiting on the owner |
 
 ## 2. Next
@@ -37,6 +37,7 @@ Nothing queued. The owner picks from the backlog.
 - `[x]` v1.0.0 local web edition (2026-10-25, tag `v1.0.0-local-web`)
 - `[x]` v2.0.0 desktop app: paste, card, format/quality/name/folder, progress + cancel, History drawer with default folder and search, update button, tools check, installer
 - `[x]` Public release: v2.0.0 on GitHub, repo public (2026-11-22)
+- `[x]` v2.1.0: history privacy, MP3, Settings and theme, bottom bar and Log, README walkthrough (2026-11-23)
 
 ## 4. Polish checklist
 
