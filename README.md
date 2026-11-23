@@ -32,18 +32,24 @@ the tools it uses all need Windows 10 or newer.
    You can cancel at any time; nothing half-finished is left behind.
 4. **History** (the button at the top) opens a panel listing everything you've
    downloaded, with a search box. Files you've moved or deleted are greyed out.
-   Click one to see where it used to be. **Default folder** in that panel sets
-   where downloads go.
+   Click one to see where it used to be. **Remove** takes one entry off the list.
+5. **Settings** in that panel sets your default download folder, can turn
+   history off, and has **Clear history…**. Removing or clearing history never
+   deletes your downloaded files.
 
 | Format | What you get |
 |---|---|
 | **MP4** | Most compatible: H.264 video + AAC audio up to 1080p (above 1080p YouTube only offers VP9/AV1) |
 | **WebM** | VP9/AV1 video + Opus audio |
 | **MKV** | The very best streams YouTube offers, kept exactly as-is |
-| **M4A** | Audio only |
+| **M4A** | Audio only, exactly as YouTube sends it |
+| **MP3** | Audio only, converted to MP3 at the bitrate you pick (128-320 kbps; 192 recommended) |
 
-Nothing is re-encoded: YouTube sends video and audio separately, and ffmpeg
-just packs them into one file.
+Nothing is re-encoded except MP3: YouTube sends video and audio separately,
+and ffmpeg just packs them into one file. YouTube has no MP3, so that one is
+converted, which loses a little quality. YouTube's audio is only about
+130-160 kbps to begin with, so above 192 kbps the file gets bigger without
+sounding better. Pick M4A for the original.
 
 **If downloads start failing,** YouTube probably changed something. Click
 **Update yt-dlp** at the bottom of the window.
@@ -78,7 +84,7 @@ YouTube or Google.
 
 ## License
 
-Copyright (C) 2026 TheMysticTestudine
+Copyright (C) 2026 TheMysticTurtle
 
 Video Vacuum is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software

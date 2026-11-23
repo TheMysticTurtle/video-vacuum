@@ -38,7 +38,14 @@ pub enum Format {
     Webm,
     Mkv,
     M4a,
+    /// The one format that's converted (D-27): YouTube sends no MP3.
+    Mp3,
 }
+
+/// The MP3 bitrates on offer, in kbit/s. YouTube's own audio is about
+/// 130-160 kbit/s, so 192 is the sensible default; 320 only makes the file bigger.
+pub const MP3_BITRATES: [u32; 4] = [128, 192, 256, 320];
+pub const MP3_DEFAULT_KBPS: u32 = 192;
 
 impl Format {
     pub fn label(self) -> &'static str {
@@ -47,11 +54,12 @@ impl Format {
             Format::Webm => "WebM",
             Format::Mkv => "MKV",
             Format::M4a => "M4A",
+            Format::Mp3 => "MP3",
         }
     }
 
     pub fn is_audio_only(self) -> bool {
-        self == Format::M4a
+        matches!(self, Format::M4a | Format::Mp3)
     }
 
     /// The extensions the finished file can end up with.
@@ -61,6 +69,7 @@ impl Format {
             Format::Webm => &["webm", "mkv"], // falls back to .mkv
             Format::Mkv => &["mkv"],
             Format::M4a => &["m4a"],
+            Format::Mp3 => &["mp3"],
         }
     }
 }
@@ -160,10 +169,12 @@ fn format_upload_date(raw: &str) -> Option<String> {
 /// yt-dlp options for each format. YouTube sends video and audio separately;
 /// yt-dlp picks the best pair and ffmpeg joins them without re-encoding.
 /// `-S res:720` = best quality no larger than 720p (README, "Sorting Formats").
+/// MP3 is the exception: ffmpeg converts the best audio at `mp3_kbps`
+/// (README, "Post-Processing Options": `--audio-format`, `--audio-quality`).
 ///
 /// A future clip/section feature adds its `--download-sections` options next
 /// to these; nothing else in the download path needs to change.
-pub fn format_args(format: Format, height: Option<u32>) -> Vec<String> {
+pub fn format_args(format: Format, height: Option<u32>, mp3_kbps: u32) -> Vec<String> {
     let res = height.map_or_else(|| "res".to_string(), |h| format!("res:{h}"));
     let args: Vec<String> = match format {
         // Most compatible: H.264 + AAC. YouTube only offers H.264 up to 1080p;
@@ -199,6 +210,17 @@ pub fn format_args(format: Format, height: Option<u32>) -> Vec<String> {
             "-x".into(),
             "--audio-format".into(),
             "m4a".into(),
+        ],
+        // Audio only, converted: the best audio (usually Opus), re-encoded by
+        // ffmpeg's LAME encoder at a constant bitrate.
+        Format::Mp3 => vec![
+            "-f".into(),
+            "ba/b".into(),
+            "-x".into(),
+            "--audio-format".into(),
+            "mp3".into(),
+            "--audio-quality".into(),
+            format!("{mp3_kbps}K"),
         ],
     };
     args
@@ -444,9 +466,15 @@ mod tests {
 
     #[test]
     fn formats_map_to_documented_options() {
-        assert_eq!(format_args(Format::Mp4, Some(720))[1], "res:720,codec:h264:m4a");
-        assert_eq!(format_args(Format::Mkv, None)[1], "res");
-        assert_eq!(format_args(Format::Webm, Some(1080))[3], "webm/mkv");
-        assert!(format_args(Format::M4a, Some(720)).contains(&"-x".to_string()));
+        assert_eq!(format_args(Format::Mp4, Some(720), 192)[1], "res:720,codec:h264:m4a");
+        assert_eq!(format_args(Format::Mkv, None, 192)[1], "res");
+        assert_eq!(format_args(Format::Webm, Some(1080), 192)[3], "webm/mkv");
+        assert!(format_args(Format::M4a, Some(720), 192).contains(&"-x".to_string()));
+        // M4A is never converted; MP3 is, at the chosen bitrate.
+        assert!(!format_args(Format::M4a, None, 192).contains(&"--audio-quality".to_string()));
+        let mp3 = format_args(Format::Mp3, Some(720), 320);
+        assert!(mp3.windows(2).any(|w| w == ["--audio-format", "mp3"]));
+        assert!(mp3.windows(2).any(|w| w == ["--audio-quality", "320K"]));
+        assert!(!mp3.iter().any(|a| a.starts_with("res")), "a video height never reaches an audio download");
     }
 }

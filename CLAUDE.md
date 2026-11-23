@@ -35,10 +35,12 @@ name and folder, download. It keeps a searchable History drawer. Open source
   The dark-studio look (GPT, then Claude) with the owner's brand art is merged (D-24, D-25).
   **v2.0.0 is released** on GitHub (2026-11-22) and the owner has walked through it.
   The repo is **public**, with `PRIVACY.md` and every commit under the GitHub
-  noreply email (D-26). v1 is kept as tag `v1.0.0-local-web`. Nothing is queued;
-  the owner picks from the ROADMAP backlog.
-- **Commit email:** always `101545919+TheMysticTurtle@users.noreply.github.com`
-  (set in this repo's config and globally). Never commit with a personal email.
+  noreply email (D-26). v1 is kept as tag `v1.0.0-local-web`.
+  On `main`, not yet released: history privacy controls (D-28), MP3 with a
+  chosen bitrate (D-27), the author name TheMysticTurtle (D-29). Next: v2.1.0.
+- **Author:** always `TheMysticTurtle <101545919+TheMysticTurtle@users.noreply.github.com>`
+  (repo config and global), in commits, copyright lines and credits. Never
+  "TheMysticTestudine" (another account) and never a personal email.
 
 ## Documentation map
 

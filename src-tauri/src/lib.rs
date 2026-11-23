@@ -166,6 +166,18 @@ async fn list_history(state: State<'_, AppState>) -> Result<Vec<HistoryItem>, St
     .await
 }
 
+/// Removes one entry from history. The downloaded file isn't touched.
+#[tauri::command]
+fn remove_history_entry(id: String, state: State<'_, AppState>) -> Result<(), String> {
+    lock(&state.store).remove(&id)
+}
+
+/// Empties history. The downloaded files aren't touched.
+#[tauri::command]
+fn clear_history(state: State<'_, AppState>) -> Result<(), String> {
+    lock(&state.store).clear()
+}
+
 fn downloaded_file(state: &AppState, id: &str) -> Result<String, String> {
     let path = lock(&state.store).find(id).map(|entry| entry.file_path.clone()).ok_or("Unknown download.")?;
     if Path::new(&path).is_file() {
@@ -207,16 +219,19 @@ struct SettingsView {
     default_folder: String,
     /// True if the user chose it; false = the system Downloads folder.
     is_custom: bool,
+    /// False = new downloads aren't added to history.
+    keep_history: bool,
 }
 
 fn settings_view(app: &AppHandle, state: &AppState) -> SettingsView {
-    let chosen = lock(&state.store).settings.default_folder.clone();
+    let settings = lock(&state.store).settings.clone();
+    let chosen = settings.default_folder;
     let system = app
         .path()
         .download_dir()
         .map(|dir| dir.display().to_string())
         .unwrap_or_default();
-    SettingsView { is_custom: chosen.is_some(), default_folder: chosen.unwrap_or(system) }
+    SettingsView { is_custom: chosen.is_some(), default_folder: chosen.unwrap_or(system), keep_history: settings.keep_history }
 }
 
 #[tauri::command]
@@ -233,6 +248,13 @@ fn set_default_folder(folder: Option<String>, app: AppHandle, state: State<'_, A
         }
     }
     lock(&state.store).set_default_folder(folder)?;
+    Ok(settings_view(&app, &state))
+}
+
+/// Turning history off keeps the existing list; `clear_history` empties it.
+#[tauri::command]
+fn set_keep_history(keep: bool, app: AppHandle, state: State<'_, AppState>) -> Result<SettingsView, String> {
+    lock(&state.store).set_keep_history(keep)?;
     Ok(settings_view(&app, &state))
 }
 
@@ -263,11 +285,14 @@ pub fn run() {
             start_download,
             cancel_download,
             list_history,
+            remove_history_entry,
+            clear_history,
             open_file,
             show_in_folder,
             open_link,
             get_settings,
             set_default_folder,
+            set_keep_history,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Video Vacuum");

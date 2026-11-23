@@ -17,6 +17,10 @@
 | `[x]` | **Owner's hands-on walkthrough** of the released installer (owner 2026-11-22: "i already did the walkthrough") | done |
 | `[x]` | **Privacy statement** `PRIVACY.md` + README section (owner: "this thing doesnt collect any info right? do we have a privacy statement?") | done |
 | `[x]` | **Repo made public** 2026-11-22 (owner: "nah i want the repo to be public xD"), after rewriting commit emails to the GitHub noreply address (D-26) | done |
+| `[x]` | **History privacy** (D-28): Clear history (asks first), Keep history on/off, Remove per entry; all in History → Settings | built and tested on `feature/history-privacy-mp3` |
+| `[x]` | **MP3 with a chosen bitrate** (D-27): 128 / 192 / 256 / 320 kbps, 192 default | built and tested on `feature/history-privacy-mp3` |
+| `[x]` | **Author name is TheMysticTurtle** everywhere (D-29) | done |
+| `[?]` | **Release v2.1.0** with the above: bump the version in the three files, update `PRIVACY.md`'s "version" line, run the Release workflow | waiting on the owner |
 | `[?]` | **SmartScreen "incorrect warning" report** for the installer link. Filled in 2026-11-22 except name, email, street address and the CAPTCHA, which only the owner can do; then Submit | waiting on the owner |
 
 ## 2. Next
@@ -39,7 +43,6 @@ Nothing queued. The owner picks from the backlog.
 - **Upload `docs/images/social-preview.jpg`** in GitHub → Settings → Social preview (GitHub has no API for it). Still the default image as of 2026-11-22.
 - **GitHub repo description** still says "A tiny local web UI for yt-dlp", which describes v1. Suggested: "Paste a YouTube link, pick format and quality, download. A small Windows app for yt-dlp; runs on your computer, nothing uploaded."
 - Optional: a simplified 16 px icon (the detailed logo blurs at title-bar size).
-- LICENSE holder name: git name "TheMysticTestudine", GitHub "TheMysticTurtle", or a real name.
 
 ## 6. Backlog (ideas not built now)
 
@@ -56,3 +59,5 @@ Nothing queued. The owner picks from the backlog.
 - **"Send to Video Vacuum" browser extension** that only passes the current tab's link to the app (no downloading in the extension).
 - Playlist support (left out on purpose to keep it simple).
 - Offer a YouTube link already on the clipboard when the window opens.
+- **Updates from inside the app** with Tauri's official updater plugin (signed with its own free key, not a paid certificate). Today a new version is installed by downloading the installer again; history and settings are kept.
+- Clear the window's cached thumbnails along with Clear history (needs a check of Tauri's API first).

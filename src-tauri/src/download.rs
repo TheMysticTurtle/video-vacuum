@@ -18,7 +18,7 @@ use crate::store::HistoryEntry;
 use crate::tools::{hidden_command, Tools};
 use crate::ytdlp::{
     escape_output_template, format_args, friendly_error, parse_line, progress_args, sanitize_file_name, Format, Line,
-    Lookup, VideoInfo,
+    Lookup, VideoInfo, MP3_BITRATES, MP3_DEFAULT_KBPS,
 };
 
 /// What the page asks for: only the choices. The video itself (link, title,
@@ -32,6 +32,9 @@ pub struct DownloadRequest {
     pub format: Format,
     /// None = best available.
     pub height: Option<u32>,
+    /// MP3 only: kbit/s, one of `MP3_BITRATES`. None = the default.
+    #[serde(default)]
+    pub mp3_kbps: Option<u32>,
     pub folder: String,
     /// Without extension; made safe and unique here.
     pub file_name: String,
@@ -107,6 +110,9 @@ pub fn prepare(
     let lookup = lookup
         .filter(|lookup| lookup.info.id == request.video_id)
         .ok_or("Look up the video again, then download.")?;
+    if request.format == Format::Mp3 && !MP3_BITRATES.contains(&mp3_kbps(request)) {
+        return Err("Choose an MP3 bitrate from the list.".into());
+    }
     let folder = PathBuf::from(request.folder.trim());
     if request.folder.trim().is_empty() || !folder.is_absolute() {
         return Err("Choose a folder to save into.".into());
@@ -128,6 +134,10 @@ pub fn prepare(
         Source::Url(lookup.info.url.clone())
     };
     Ok(Prepared { video: lookup.info.clone(), source, folder, stem, existing })
+}
+
+fn mp3_kbps(request: &DownloadRequest) -> u32 {
+    request.mp3_kbps.unwrap_or(MP3_DEFAULT_KBPS)
 }
 
 /// Lowercase names of everything in `folder`.
@@ -190,7 +200,7 @@ pub fn run(
     command
         .args(tools.ytdlp_base_args())
         .args(progress_args())
-        .args(format_args(request.format, request.height))
+        .args(format_args(request.format, request.height, mp3_kbps(request)))
         .arg("--no-overwrites")
         .arg("-P")
         .arg(&prepared.folder)
@@ -273,7 +283,9 @@ pub fn run(
                 channel: prepared.video.channel.clone(),
                 thumbnail: prepared.video.thumbnail.clone(),
                 format: request.format.label().into(),
-                quality: if request.format.is_audio_only() {
+                quality: if request.format == Format::Mp3 {
+                    format!("{} kbps", mp3_kbps(request))
+                } else if request.format.is_audio_only() {
                     "Audio".into()
                 } else {
                     request.height.map_or_else(|| "Best available".into(), |h| format!("{h}p"))
@@ -405,6 +417,7 @@ mod tests {
             video_id: "jNQXAC9IVRw".into(),
             format: Format::Mp4,
             height: None,
+            mp3_kbps: None,
             folder: dir.display().to_string(),
             file_name: "x".into(),
         };
@@ -414,6 +427,12 @@ mod tests {
         assert!(prepare(&request, Some(&other), &dir, "j2").unwrap_err().contains("Look up"));
         let relative = DownloadRequest { folder: "relative/folder".into(), ..request.clone() };
         assert!(prepare(&relative, Some(&fresh), &dir, "j3").is_err());
+        let odd_bitrate = DownloadRequest { format: Format::Mp3, mp3_kbps: Some(999), ..request.clone() };
+        assert!(prepare(&odd_bitrate, Some(&fresh), &dir, "j4").unwrap_err().contains("bitrate"));
+        let mp3 = DownloadRequest { format: Format::Mp3, mp3_kbps: Some(320), ..request.clone() };
+        assert!(prepare(&mp3, Some(&fresh), &dir, "j5").is_ok());
+        let default_mp3 = DownloadRequest { format: Format::Mp3, mp3_kbps: None, ..request.clone() };
+        assert!(prepare(&default_mp3, Some(&fresh), &dir, "j6").is_ok());
         let _ = fs::remove_dir_all(dir);
     }
 
@@ -424,6 +443,7 @@ mod tests {
             video_id: "jNQXAC9IVRw".into(),
             format: Format::Mp4,
             height: None,
+            mp3_kbps: None,
             folder: dir.display().to_string(),
             file_name: "x".into(),
         };

@@ -3,7 +3,11 @@
 
 import { Channel, invoke } from "@tauri-apps/api/core";
 
-export type Format = "mp4" | "webm" | "mkv" | "m4a";
+export type Format = "mp4" | "webm" | "mkv" | "m4a" | "mp3";
+
+/** MP3 bitrates in kbit/s; must match MP3_BITRATES in src-tauri/src/ytdlp.rs. */
+export const MP3_BITRATES = [128, 192, 256, 320] as const;
+export const MP3_DEFAULT_KBPS = 192;
 
 export interface ToolsStatus {
   ready: boolean;
@@ -47,6 +51,7 @@ export interface HistoryItem extends HistoryEntry {
 export interface SettingsView {
   defaultFolder: string;
   isCustom: boolean;
+  keepHistory: boolean; // false = new downloads aren't added to history
 }
 
 // Only the choices: the video itself is the one the app just looked up (Rust keeps it).
@@ -54,6 +59,7 @@ export interface DownloadRequest {
   videoId: string;
   format: Format;
   height: number | null; // null = best available
+  mp3Kbps: number | null; // MP3 only; null = the default
   folder: string;
   fileName: string; // without extension
 }
@@ -78,11 +84,14 @@ export const api = {
   },
   cancelDownload: (jobId: string) => invoke<void>("cancel_download", { jobId }),
   listHistory: () => invoke<HistoryItem[]>("list_history"),
+  removeHistoryEntry: (id: string) => invoke<void>("remove_history_entry", { id }),
+  clearHistory: () => invoke<void>("clear_history"),
   openFile: (id: string) => invoke<void>("open_file", { id }),
   showInFolder: (id: string) => invoke<void>("show_in_folder", { id }),
   openLink: (url: string) => invoke<void>("open_link", { url }),
   getSettings: () => invoke<SettingsView>("get_settings"),
   setDefaultFolder: (folder: string | null) => invoke<SettingsView>("set_default_folder", { folder }),
+  setKeepHistory: (keep: boolean) => invoke<SettingsView>("set_keep_history", { keep }),
 };
 
 /** Commands reject with a plain string message. */

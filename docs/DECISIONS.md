@@ -249,3 +249,52 @@ pre-rewrite commits was deleted before the repo went public.
 - A public link was needed for Microsoft's SmartScreen "incorrect warning"
   form; `PRIVACY.md` on GitHub is that link.
 **Supersedes:** "still private" in D-22.
+
+### D-27 ✅ MP3 with a chosen bitrate: the one converted format (2026-11-22)
+**Decision:** a fifth format, **MP3 · audio only (converted)**, with a Bitrate
+choice of 128 / 192 / 256 / 320 kbps (default 192). yt-dlp takes the best audio
+and ffmpeg converts it: `-f ba/b -x --audio-format mp3 --audio-quality <N>K`
+(yt-dlp README, "Post-Processing Options").
+**Why:** owner, 2026-11-22: "How hard is it to save the audio as .mp3 with a
+selectable bitrate?" → "yes". MP3 plays everywhere.
+**Consequence:**
+- It's the only exception to D-05: YouTube has no MP3, so the audio is
+  re-encoded and loses a little quality. The menu says "converted" and M4A
+  says "original", so people can pick.
+- YouTube's audio is ~130-160 kbps, so 192 is the recommended default; 320
+  only makes the file bigger.
+- The encoder is LAME (libmp3lame) inside the FFmpeg that the tools installer
+  already sets up. Nothing new to install or ship.
+- The page can only send a bitrate from the fixed list; the backend refuses
+  anything else.
+- History shows the bitrate ("MP3 · 192 kbps").
+
+### D-28 ✅ The user controls their history (2026-11-22)
+**Decision:** in History → **Settings** (the panel was called "Default folder"):
+- **Clear history…** empties the list after one confirm step ("Clear all
+  history? This can't be undone."). Owner: "the guard for deleting history
+  where it asks is fine."
+- **Keep download history** (on by default). Off = new downloads aren't
+  written to history at all. Turning it off keeps the existing list; clearing
+  is the separate button.
+- **Remove** on each entry, including moved or deleted files.
+- Owner, 2026-11-22: "there should be a clear button to just delete it all
+  right away. with an option to turn it off … And a way to delete individual
+  histories. xD so people can be private if they wish."
+**How:** `Store::clear`, `Store::remove` and `Settings.keep_history`, each
+saved atomically like the rest (D-18). `keepHistory` is a new optional field
+in `settings.json` that reads as on when missing, so v2.0.0 files load
+unchanged and the format version stays 1. While history is off, finished
+downloads are kept in memory only, so that session's **Open** and **Show in
+folder** still work.
+**Consequence:** removing or clearing only forgets entries. Downloaded files
+are never deleted by the app.
+
+### D-29 ✅ The author name is TheMysticTurtle (2026-11-22)
+**Decision:** the copyright holder, the window's legal notice, the installer's
+copyright field and git's `user.name` are all **TheMysticTurtle**, the GitHub
+account the project is published on.
+**Why:** owner, 2026-11-22: "on the bottom it says C at themystictestudine.
+that's my other account. this is published on TheMysticTurtle." This settles
+the open "LICENSE holder name" question. Commits made before this keep their
+old author name; they weren't rewritten.

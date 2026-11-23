@@ -1,7 +1,7 @@
 // Video Vacuum's window: Link → Video → Save as → progress, plus the History drawer.
 
 import { useEffect, useRef, useState } from "react";
-import { api, errorText, type DownloadEvent, type SettingsView, type ToolsStatus, type VideoInfo } from "./api";
+import { api, errorText, MP3_DEFAULT_KBPS, type DownloadEvent, type SettingsView, type ToolsStatus, type VideoInfo } from "./api";
 import DownloadStatus, { type DownloadState } from "./components/DownloadStatus";
 import HistoryDrawer from "./components/HistoryDrawer";
 // The skinny banner, made from media/ by tools/make-brand-images.ps1.
@@ -26,7 +26,13 @@ export default function App() {
   const [video, setVideo] = useState<VideoInfo | null>(null);
   const lookupId = useRef(0); // ignores slow answers for a link that was since replaced
 
-  const [choices, setChoices] = useState<SaveChoices>({ format: "mp4", height: null, fileName: "", folder: "" });
+  const [choices, setChoices] = useState<SaveChoices>({
+    format: "mp4",
+    height: null,
+    mp3Kbps: MP3_DEFAULT_KBPS,
+    fileName: "",
+    folder: "",
+  });
   const [download, setDownload] = useState<DownloadState>({ phase: "idle" });
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
@@ -88,7 +94,8 @@ export default function App() {
         {
           videoId: video.id,
           format: choices.format,
-          height: choices.format === "m4a" ? null : choices.height,
+          height: choices.format === "m4a" || choices.format === "mp3" ? null : choices.height,
+          mp3Kbps: choices.format === "mp3" ? choices.mp3Kbps : null,
           folder: choices.folder,
           fileName: choices.fileName,
         },
@@ -215,7 +222,7 @@ export default function App() {
           {update.message && <p className="message pre">{update.message}</p>}
           {/* GPLv3 "Appropriate Legal Notices" (§0, §5d) */}
           <p className="small legal">
-            Video Vacuum © 2026 TheMysticTestudine. Free software under the GNU GPL v3 or later, with no warranty. Full
+            Video Vacuum © 2026 TheMysticTurtle. Free software under the GNU GPL v3 or later, with no warranty. Full
             license: gnu.org/licenses/gpl-3.0
           </p>
         </footer>

@@ -1,5 +1,7 @@
 // The History drawer on the right: the masthead's "History" button opens it.
-// Inside: a "Default folder" setting, a search box, and every past download.
+// Inside: Settings (default folder, keep history on/off, clear history), a
+// search box, and every past download, each with Remove. Removing or clearing
+// only forgets the entries; the downloaded files are never touched (D-28).
 // Files that were moved or deleted collapse and grey out; expanding one says
 // where it used to be.
 
@@ -20,6 +22,7 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [search, setSearch] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
@@ -69,6 +72,37 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
     }
   }
 
+  async function setKeepHistory(keep: boolean) {
+    try {
+      onSettingsChange(await api.setKeepHistory(keep));
+      setMessage("");
+    } catch (e) {
+      setMessage(errorText(e));
+    }
+  }
+
+  async function clearHistory() {
+    setConfirmClear(false);
+    try {
+      await api.clearHistory();
+      setItems([]);
+      setExpanded(null);
+      setMessage("");
+    } catch (e) {
+      setMessage(errorText(e));
+    }
+  }
+
+  async function remove(id: string) {
+    try {
+      await api.removeHistoryEntry(id);
+      setItems((list) => list.filter((item) => item.id !== id));
+      setMessage("");
+    } catch (e) {
+      setMessage(errorText(e));
+    }
+  }
+
   async function run(action: () => Promise<void>) {
     try {
       await action();
@@ -87,7 +121,7 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
             <button type="button" className="secondary" onClick={onToggle}>Close</button>
           </div>
           <button type="button" className="link settings-toggle" onClick={() => setShowSettings(!showSettings)}
-            aria-expanded={showSettings}>Default folder</button>
+            aria-expanded={showSettings}>Settings</button>
 
           {showSettings && settings && (
             <div className="settings">
@@ -105,7 +139,43 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
                   </button>
                 )}
               </div>
+
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={settings.keepHistory}
+                  onChange={(e) => setKeepHistory(e.target.checked)}
+                />
+                Keep download history
+              </label>
+
+              {confirmClear ? (
+                <div className="confirm" role="alert">
+                  <p className="small">Clear all history? This can't be undone. Your downloaded files stay where they are.</p>
+                  <div className="row">
+                    <button type="button" className="danger" onClick={clearHistory}>
+                      Clear
+                    </button>
+                    <button type="button" className="secondary" onClick={() => setConfirmClear(false)}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setConfirmClear(true)}
+                  disabled={!items.length}
+                >
+                  Clear history…
+                </button>
+              )}
             </div>
+          )}
+
+          {settings && !settings.keepHistory && (
+            <p className="muted small">History is off. New downloads aren't recorded.</p>
           )}
 
           <input
@@ -141,6 +211,10 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
                       <button type="button" className="link" onClick={() => run(() => api.showInFolder(item.id))}>
                         Show in folder
                       </button>
+                      <button type="button" className="link" onClick={() => remove(item.id)}
+                        aria-label={`Remove "${item.title}" from history`}>
+                        Remove
+                      </button>
                     </div>
                   </div>
                 </li>
@@ -159,6 +233,11 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
                       Moved from {item.filePath}
                       <br />
                       {formatWhen(item.downloadedAt)}
+                      <br />
+                      <button type="button" className="link" onClick={() => remove(item.id)}
+                        aria-label={`Remove "${item.title}" from history`}>
+                        Remove
+                      </button>
                     </p>
                   )}
                 </li>

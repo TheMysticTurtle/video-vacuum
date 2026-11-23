@@ -1,12 +1,13 @@
 // Step 3: format, quality, file name and folder, then Download.
 
 import { open } from "@tauri-apps/plugin-dialog";
-import type { Format, VideoInfo } from "../api";
+import { MP3_BITRATES, type Format, type VideoInfo } from "../api";
 import { extensionFor } from "../format";
 
 export interface SaveChoices {
   format: Format;
   height: number | null; // null = best available
+  mp3Kbps: number; // used only for MP3
   fileName: string;
   folder: string;
 }
@@ -20,7 +21,8 @@ interface Props {
 }
 
 export default function SaveOptions({ video, choices, onChange, onDownload, disabled }: Props) {
-  const audioOnly = choices.format === "m4a";
+  const mp3 = choices.format === "mp3";
+  const audioOnly = choices.format === "m4a" || mp3;
   const set = (patch: Partial<SaveChoices>) => onChange({ ...choices, ...patch });
 
   async function chooseFolder() {
@@ -38,20 +40,38 @@ export default function SaveOptions({ video, choices, onChange, onDownload, disa
             <option value="mp4">MP4 · video (most compatible)</option>
             <option value="webm">WebM · video</option>
             <option value="mkv">MKV · video (keeps original streams)</option>
-            <option value="m4a">M4A · audio only</option>
+            <option value="m4a">M4A · audio only (original)</option>
+            <option value="mp3">MP3 · audio only (converted)</option>
           </select>
         </label>
-        <label className="field">
-          Quality
-          <select
-            value={audioOnly || choices.height == null ? "" : String(choices.height)}
-            onChange={(e) => set({ height: e.target.value ? Number(e.target.value) : null })}
-            disabled={disabled || audioOnly}
-          >
-            <option value="">{audioOnly ? "Best audio" : "Best available"}</option>
-            {!audioOnly && video.heights.map((h) => <option key={h} value={h}>{`${h}p`}</option>)}
-          </select>
-        </label>
+        {mp3 ? (
+          <label className="field">
+            Bitrate
+            <select
+              value={String(choices.mp3Kbps)}
+              onChange={(e) => set({ mp3Kbps: Number(e.target.value) })}
+              disabled={disabled}
+            >
+              {MP3_BITRATES.map((kbps) => (
+                <option key={kbps} value={kbps}>
+                  {kbps === 192 ? `${kbps} kbps (recommended)` : `${kbps} kbps`}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <label className="field">
+            Quality
+            <select
+              value={audioOnly || choices.height == null ? "" : String(choices.height)}
+              onChange={(e) => set({ height: e.target.value ? Number(e.target.value) : null })}
+              disabled={disabled || audioOnly}
+            >
+              <option value="">{audioOnly ? "Best audio" : "Best available"}</option>
+              {!audioOnly && video.heights.map((h) => <option key={h} value={h}>{`${h}p`}</option>)}
+            </select>
+          </label>
+        )}
         <label className="field wide">
           File name
           <div className="with-suffix">

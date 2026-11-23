@@ -22,7 +22,7 @@ gotchas hit along the way. Versions are as of **2026-11-22**.
 
 **Outside programs the app runs (not shipped, installed separately; D-15):**
 - yt-dlp: Unlicense, https://github.com/yt-dlp/yt-dlp. winget `yt-dlp.yt-dlp`.
-- FFmpeg: GPL build, winget `yt-dlp.FFmpeg`.
+- FFmpeg: GPL build, winget `yt-dlp.FFmpeg`. Its LAME encoder (`libmp3lame`, LGPL) makes the MP3s (D-27); checked with `ffmpeg -encoders`.
 - Deno: MIT, winget `DenoLand.Deno`.
 
 ### License scan (2026-11-22)
@@ -53,15 +53,17 @@ cd src-tauri && cargo clippy --all-targets -- -D warnings && cargo test
 npm run check   # tsc --noEmit
 ```
 
-The Rust tests (16) cover:
+The Rust tests (19) cover:
 - link cleanup (12 good forms, 9 bad)
 - file-name safety
 - progress-line parsing
 - plain-word errors
 - yt-dlp JSON → card info
-- format options
+- format options, including MP3 bitrates and refusing a bitrate not on the list
 - unique naming and cleanup that only touches its own files
 - history/settings save, reload and newer-file protection
+- removing an entry, clearing history, history turned off (nothing written,
+  but the session can still open the file), v2.0.0 settings reading as "keep history"
 - PATH variable expansion
 - winget detection
 
@@ -82,7 +84,14 @@ WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9223" \
   `DataTransfer`), set `<select>` values (via the native value setter, then a
   `change` event) and click buttons. It can also call Rust commands directly
   through `window.__TAURI_INTERNALS__.invoke`.
-- The dev app uses the real app-data folder. Put test downloads in a scratch folder and clean up afterwards.
+- **Give the test app its own data folder** by adding `"identifier":"com.themysticturtle.videovacuum.devtest"`
+  to the `--config` JSON. Otherwise the dev app uses the owner's real history
+  and settings, and a Clear history test would wipe them. Then set the default
+  folder to a scratch folder (`invoke('set_default_folder', …)`), and delete
+  both `…devtest` folders in `%APPDATA%` and `%LOCALAPPDATA%` afterwards.
+- **Stop only the test app's own processes** (by PID, or `TaskStop` on the dev
+  command plus the Vite server on port 1420). `taskkill /IM video-vacuum.exe`
+  also closes the owner's installed copy if it's open.
 
 ## 5. Gotchas
 

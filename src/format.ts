@@ -39,5 +39,6 @@ export function formatWhen(secondsSince1970: number): string {
 
 /** The extension a format usually ends up with (WebM can fall back to .mkv). */
 export function extensionFor(format: string): string {
-  return format === "m4a" ? ".m4a" : format === "mkv" ? ".mkv" : format === "webm" ? ".webm" : ".mp4";
+  const known: Record<string, string> = { m4a: ".m4a", mp3: ".mp3", mkv: ".mkv", webm: ".webm" };
+  return known[format] ?? ".mp4";
 }

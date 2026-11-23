@@ -275,6 +275,31 @@ footer {
   overflow-wrap: anywhere;
   font-size: 0.85rem;
 }
+.settings .check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 10px;
+  cursor: pointer;
+}
+.settings .check input {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+.confirm p {
+  margin: 0 0 8px;
+}
+button.danger {
+  background: transparent;
+  color: var(--error);
+  border-color: var(--error);
+}
+button.danger:hover:not(:disabled) {
+  background: var(--bg);
+  border-color: var(--error);
+}
 
 .history-list {
   list-style: none;

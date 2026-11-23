@@ -34,7 +34,7 @@ _Last updated: 2026-11-22 (version 2.0.0)._
 |---|---|---|
 | Your downloaded files | The folder you choose (your Downloads folder unless you change it) | They're what you asked for |
 | Download history: titles, video and channel links, thumbnail links, file locations, sizes, dates | `%APPDATA%\com.themysticturtle.videovacuum\history.json` | The **History** drawer and its search |
-| Your default download folder | `%APPDATA%\com.themysticturtle.videovacuum\settings.json` | So you don't have to pick it every time |
+| Your settings: default download folder, and whether to keep history | `%APPDATA%\com.themysticturtle.videovacuum\settings.json` | So you don't have to pick them every time |
 | The window's own cache, which may include thumbnails | `%LOCALAPPDATA%\com.themysticturtle.videovacuum\` | Kept by WebView2 |
 | A temporary copy of a video's details | The same local folder | Lets the download reuse the lookup; deleted as soon as the download finishes |
 
@@ -42,6 +42,11 @@ None of this is sent anywhere.
 
 ## Deleting your data
 
+- **In the app:** open **History → Settings**.
+  - **Clear history…** deletes the whole list (it asks first).
+  - **Remove** on any entry deletes just that one.
+  - Untick **Keep download history** and new downloads aren't recorded at all.
+  - None of these touch your downloaded files.
 - **When uninstalling:** tick **"Delete the application data"** in the
   uninstaller. That removes both `com.themysticturtle.videovacuum` folders
   above. Without the tick, your history is kept in case you reinstall.

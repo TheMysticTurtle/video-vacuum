@@ -2,6 +2,52 @@
 
 Newest on top. Forward-looking items live in `ROADMAP.md`; the why lives in `docs/DECISIONS.md`.
 
+### Session 2026-11-22 (night) — history privacy, MP3, the author name
+**Goal:** owner: "there should be a clear button to just delete it all right
+away. with an option to turn it off … And a way to delete individual
+histories", "How hard is it to save the audio as .mp3 with a selectable
+bitrate?", and the footer's "TheMysticTestudine" is the wrong account.
+
+**What we did** (branch `feature/history-privacy-mp3`):
+- **History → Settings** (was "Default folder"; D-28):
+  - Keep download history on/off.
+  - Clear history… with a confirm step.
+  - Remove on every entry, including moved files.
+  - Files are never deleted.
+  - History off still lets that session's Open / Show in folder work.
+- **MP3** format with a 128/192/256/320 kbps Bitrate menu, 192 default (D-27).
+  The backend refuses any other bitrate.
+- **TheMysticTurtle** in the window's legal notice, the installer copyright
+  and the README (D-29). Git `user.name` is TheMysticTurtle in this repo and
+  globally; a standing rule for every project is in the owner's global Claude
+  instructions.
+- Docs: README (MP3 row, History/Settings steps), PRIVACY (the new controls),
+  TECH_REFERENCE (19 tests, LAME, test-app data folder), ROADMAP, D-27 to D-29.
+
+**Test results:**
+- clippy `-D warnings` clean, `cargo test` 19 passed (4 new: remove/clear,
+  history off, old settings file, MP3 bitrate checks), tsc clean.
+- Real window (hidden, CDP, its own `…devtest` data folder; "Me at the zoo"):
+  - MP3 at 128, 192 (default, untouched menu) and 320: ffprobe showed mp3
+    128000 / 192000 / 320000 bit/s.
+  - M4A (AAC, unconverted), MP4 240p and WebM still saved.
+  - Remove took one entry off and history.json matched.
+  - History off: a WebM wasn't recorded; settings.json had `"keepHistory": false`;
+    the "History is off" note showed.
+  - Clear history: Cancel kept 4 entries; Clear emptied the list and the file;
+    all 6 downloaded files were still there; the button greyed out when empty.
+  - History back on: the next download was recorded.
+  - Screenshots in light and dark; the footer reads "© 2026 TheMysticTurtle".
+- The owner's real history.json and settings.json were byte-identical afterwards.
+
+**Surprise:** stopping the test app with `taskkill /IM video-vacuum.exe` also
+closed a second Video Vacuum process, which may have been the owner's
+installed copy. TECH_REFERENCE §4 now says to stop the test app by PID.
+
+**Where we landed:** merged into `main`, not pushed.
+
+**Next:** the owner decides on releasing v2.1.0 (version bump + Release workflow).
+
 ### Session 2026-11-22 (late) — privacy, going public, docs refresh
 **Goal:** a privacy statement, make the repo public without exposing the
 owner's email, report SmartScreen's warning to Microsoft, and bring the docs

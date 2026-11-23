@@ -37,7 +37,7 @@
     "active": true,
     "targets": ["nsis"],
     "publisher": "TheMysticTurtle",
-    "copyright": "Copyright (C) 2026 TheMysticTestudine. GPL-3.0-or-later.",
+    "copyright": "Copyright (C) 2026 TheMysticTurtle. GPL-3.0-or-later.",
     "shortDescription": "Paste a YouTube link, pick a format and quality, download.",
     "category": "Video",
     "icon": [
