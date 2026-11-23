@@ -53,7 +53,7 @@ cd src-tauri && cargo clippy --all-targets -- -D warnings && cargo test
 npm run check   # tsc --noEmit
 ```
 
-The Rust tests (20) cover:
+The Rust tests (25) cover:
 - link cleanup (12 good forms, 9 bad)
 - file-name safety
 - progress-line parsing
@@ -65,6 +65,9 @@ The Rust tests (20) cover:
 - removing an entry, clearing history, history turned off (nothing written,
   but the session can still open the file), v2.0.0 settings reading as "keep history"
   and "system" theme, the theme saved and read back
+- the diagnostic log: UTC dates (round trip, leap day), the file line format,
+  memory-only until saving is on, 30-day cleanup that touches only our files,
+  the 2000-line cap, skipping exact repeats; yt-dlp warnings and step names
 - PATH variable expansion
 - winget detection
 

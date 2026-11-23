@@ -21,6 +21,7 @@
 | `[x]` | **Settings panel and layout polish** (D-30): Settings button with folder, theme (System / Light / Dark) and history controls; history controls also above the History list; bigger section titles; bordered description with an arrow toggle; 1000 x 960 window that shrinks to fit small screens | built and tested on `feature/history-privacy-mp3` |
 | `[x]` | **MP3 with a chosen bitrate** (D-27): 128 / 192 / 256 / 320 kbps, 192 default | built and tested on `feature/history-privacy-mp3` |
 | `[x]` | **Author name is TheMysticTurtle** everywhere (D-29) | done |
+| `[x]` | **Bottom bar and diagnostic Log** (D-31): engine status, Update yt-dlp, Privacy Policy and GitHub pinned at the bottom; a Log panel docked above it (drag to resize), session-only or saved for 30 days; History panel re-laid out (search, then Keep/Clear on one row) | built and tested on `feature/history-privacy-mp3` |
 | `[?]` | **Owner tests the v2.1.0 installer**, then merge into `main` (owner: "do not auto merge branches into my stable main until I test it myself and tell you it's good"). Version already bumped on the branch | waiting on the owner |
 | `[ ]` | **Release v2.1.0**: push `main`, run the Release workflow | after the owner's OK |
 | `[?]` | **SmartScreen "incorrect warning" report** for the installer link. Filled in 2026-11-22 except name, email, street address and the CAPTCHA, which only the owner can do; then Submit | waiting on the owner |

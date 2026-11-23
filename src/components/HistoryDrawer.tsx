@@ -1,7 +1,8 @@
 // The History drawer on the right: the masthead's "History" button opens it.
-// Inside: "Keep download history" and "Clear history…" right above the list
-// (the same controls as in Settings, sharing one saved value; D-30), a search
-// box, and every past download, each with Remove. Removing or clearing only
+// Inside, top to bottom: the title and Close; a search box (with a Clear
+// button once something is typed); a box with "Keep download history" and
+// "Clear history" side by side (the same controls as in Settings, sharing one
+// saved value; D-30); and every past download, each with Remove. Removing or clearing only
 // forgets entries; downloaded files are never touched (D-28).
 // Files that were moved or deleted collapse and grey out; expanding one says
 // where it used to be.
@@ -80,6 +81,23 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
             <h2>Download history</h2>
             <button type="button" className="secondary" onClick={onToggle}>Close</button>
           </div>
+          <div className="with-suffix search-box">
+            <input
+              type="text"
+              placeholder="Search downloads"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setSearch("")}
+              aria-label="Search downloads"
+              spellCheck={false}
+            />
+            {search && (
+              <button type="button" className="link search-clear" onClick={() => setSearch("")}>
+                Clear
+              </button>
+            )}
+          </div>
+
           {settings && (
             <HistoryControls
               settings={settings}
@@ -88,14 +106,6 @@ export default function HistoryDrawer({ open, onToggle, refreshKey, settings, on
               canClear={items.length > 0}
             />
           )}
-
-          <input
-            type="search"
-            placeholder="Search downloads"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label="Search downloads"
-          />
           {message && <p className="message error">{message}</p>}
 
           <ul className="history-list">

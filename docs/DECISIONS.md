@@ -337,3 +337,43 @@ old author name; they weren't rewritten.
 **Consequence:** the History panel's old "Settings" link and its folder
 setting are gone; the folder lives in Settings only.
 **Supersedes:** the History → Settings layout in D-28.
+
+### D-31 ✅ A bottom status bar and a diagnostic Log (2026-11-23)
+**Decision:**
+- The engine status, yt-dlp version, **Update yt-dlp**, **Privacy Policy**,
+  **GitHub** and the license line live in a bar pinned to the bottom of the
+  window. The page scrolls between the masthead and the bar.
+- A **Log** toggle in the bar opens a panel docked above it. The rest of the
+  window stays usable, so the log can be watched while working. Drag its top
+  edge (or use the arrow keys on it) to resize it; the size is remembered.
+- The log shows each step in plain words: lookups, the download's streams and
+  finishing steps, the saved file, tool checks, installs and updates. Warnings
+  and errors carry yt-dlp's own words underneath. **Copy** and **Clear**.
+- **Session only by default.** **Settings → Save logs to disk** also writes a
+  daily file, `activity-YYYY-MM-DD.log`, to
+  `%LOCALAPPDATA%\<app id>\logs`. Files older than 30 days are deleted.
+  **Open log folder** and **Delete saved logs** sit next to the switch.
+- The History panel: a bigger title in line with Close, then the search box
+  (with a Clear button once something is typed), then Keep history and Clear
+  history on one row in their own box, then the list. Button labels lose
+  their "…" ("Change", "Browse", "Clear history").
+- Owner, 2026-11-23: "the little live action readout / log so people can see
+  what it's doing and details on any errors and how to fix it. Then they can
+  choose to save the logs or have each one only be for that session", and
+  "put the diagnostic log as a toggle down in that bottom bar … opens a little
+  expandable bottom window so people can watch it … while you're still
+  normally operating the app".
+**How:**
+- `activity.rs` keeps the newest 2000 lines and skips an exact repeat of the
+  line before it.
+- `note()` in `lib.rs` adds a line and sends it to the window as the Tauri
+  event `activity`. The page only shows lines; it never writes them.
+- File times are UTC (marked "Z") so they can't be misread; the window shows
+  local time.
+- Only files named like ours are ever pruned or deleted.
+- **Privacy Policy** and **GitHub** go through `open_project_page`. The page
+  names "privacy" or "github"; the addresses are fixed in Rust.
+**Consequence:**
+- Saved logs hold video titles and file paths, like History. `PRIVACY.md`
+  says so, and nothing leaves the PC.
+- The uninstaller's "Delete the application data" removes the logs too.

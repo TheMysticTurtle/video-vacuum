@@ -14,11 +14,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 
 
+use crate::activity::Level;
 use crate::store::HistoryEntry;
 use crate::tools::{hidden_command, Tools};
 use crate::ytdlp::{
-    escape_output_template, format_args, friendly_error, parse_line, progress_args, sanitize_file_name, Format, Line,
-    Lookup, VideoInfo, MP3_BITRATES, MP3_DEFAULT_KBPS,
+    escape_output_template, format_args, friendly_error, parse_line, progress_args, sanitize_file_name, step_words,
+    Format, Line, Lookup, VideoInfo, MP3_BITRATES, MP3_DEFAULT_KBPS,
 };
 
 /// What the page asks for: only the choices. The video itself (link, title,
@@ -136,6 +137,17 @@ pub fn prepare(
     Ok(Prepared { video: lookup.info.clone(), source, folder, stem, existing })
 }
 
+/// "1080p", "Best available", "Audio", "192 kbps": for history and the log.
+fn quality_label(request: &DownloadRequest) -> String {
+    if request.format == Format::Mp3 {
+        format!("{} kbps", mp3_kbps(request))
+    } else if request.format.is_audio_only() {
+        "Audio".into()
+    } else {
+        request.height.map_or_else(|| "Best available".into(), |h| format!("{h}p"))
+    }
+}
+
 fn mp3_kbps(request: &DownloadRequest) -> u32 {
     request.mp3_kbps.unwrap_or(MP3_DEFAULT_KBPS)
 }
@@ -179,20 +191,35 @@ fn clean_up(folder: &Path, stem: &str, existing: &HashSet<String>) {
     }
 }
 
-/// Run the download to the end, sending events as it goes. Returns the
-/// finished file's history entry, or None if it failed or was cancelled.
+/// What the diagnostic log is told (D-31): a level, plain words, optional detail.
+pub type Note<'a> = &'a dyn Fn(Level, String, Option<String>);
+
+/// Run the download to the end, sending events to the window and plain-word
+/// steps to the diagnostic log as it goes. Returns the finished file's history
+/// entry, or None if it failed or was cancelled.
 pub fn run(
     tools: &Tools,
     request: &DownloadRequest,
     prepared: &Prepared,
     job: &JobControl,
     send: &dyn Fn(DownloadEvent),
+    note: Note,
 ) -> Option<HistoryEntry> {
     send(DownloadEvent::Started { file_name: prepared.stem.clone() });
+    let source = match &prepared.source {
+        Source::InfoJson(_) => "the lookup just made (no second trip to YouTube)",
+        Source::Url(_) => "the link (the earlier lookup was over an hour old)",
+    };
+    note(
+        Level::Info,
+        format!("Downloading \"{}\" as {} ({})", prepared.video.title, request.format.label(), quality_label(request)),
+        Some(format!("Folder: {}\nFrom: {source}", prepared.folder.display())),
+    );
 
     let mut command = match tools.ytdlp_command() {
         Ok(command) => command,
         Err(message) => {
+            note(Level::Error, message.clone(), None);
             send(DownloadEvent::Failed { message, detail: String::new() });
             return None;
         }
@@ -218,6 +245,7 @@ pub fn run(
     let mut child = match command.spawn() {
         Ok(child) => child,
         Err(err) => {
+            note(Level::Error, "Couldn't start yt-dlp.".into(), Some(err.to_string()));
             send(DownloadEvent::Failed { message: "Couldn't start yt-dlp.".into(), detail: err.to_string() });
             return None;
         }
@@ -250,14 +278,30 @@ pub fn run(
 
     let mut final_path: Option<String> = None;
     let mut other_output = String::new();
+    // Log each stream once when it starts, and each finishing step once.
+    let mut stage_logged: Option<&'static str> = None;
+    let mut step_logged = String::new();
     for line in lines_rx {
         match parse_line(&line) {
             Line::Progress { stage, percent, speed, eta } => {
+                if stage_logged != Some(stage) {
+                    stage_logged = Some(stage);
+                    note(Level::Info, format!("Downloading the {stage} stream"), None);
+                }
                 send(DownloadEvent::Progress { stage, percent, speed, eta })
             }
-            Line::Finishing => send(DownloadEvent::Finishing),
+            Line::Finishing(step) => {
+                if step != step_logged {
+                    note(Level::Info, step_words(&step, request.format), None);
+                    step_logged = step;
+                }
+                send(DownloadEvent::Finishing)
+            }
             Line::File(path) => final_path = Some(path),
             Line::Other(text) => {
+                if let Some(warning) = text.trim().strip_prefix("WARNING:") {
+                    note(Level::Warn, "yt-dlp warning".into(), Some(warning.trim().to_string()));
+                }
                 other_output.push_str(&text);
                 other_output.push('\n');
             }
@@ -270,6 +314,7 @@ pub fn run(
 
     if job.cancelled.load(Ordering::SeqCst) {
         clean_up(&prepared.folder, &prepared.stem, &prepared.existing);
+        note(Level::Info, "Cancelled. The unfinished files were removed.".into(), None);
         send(DownloadEvent::Cancelled);
         return None;
     }
@@ -283,22 +328,22 @@ pub fn run(
                 channel: prepared.video.channel.clone(),
                 thumbnail: prepared.video.thumbnail.clone(),
                 format: request.format.label().into(),
-                quality: if request.format == Format::Mp3 {
-                    format!("{} kbps", mp3_kbps(request))
-                } else if request.format.is_audio_only() {
-                    "Audio".into()
-                } else {
-                    request.height.map_or_else(|| "Best available".into(), |h| format!("{h}p"))
-                },
+                quality: quality_label(request),
                 size_bytes: fs::metadata(&path).ok().map(|m| m.len()),
                 file_path: path,
                 downloaded_at: now_seconds(),
             };
+            let size = entry.size_bytes.map(|b| format!(" ({:.1} MB)", b as f64 / 1e6)).unwrap_or_default();
+            note(Level::Info, format!("Saved {}{size}", entry.file_path), None);
             Some(entry)
         }
         None => {
             clean_up(&prepared.folder, &prepared.stem, &prepared.existing);
             let error = friendly_error(&other_output);
+            // The log gets yt-dlp's last lines, not just the one shown in the window.
+            let lines: Vec<&str> = other_output.lines().filter(|l| !l.trim().is_empty()).collect();
+            let tail = lines[lines.len().saturating_sub(15)..].join("\n");
+            note(Level::Error, format!("Download failed: {}", error.message), Some(tail));
             send(DownloadEvent::Failed { message: error.message, detail: error.detail });
             None
         }

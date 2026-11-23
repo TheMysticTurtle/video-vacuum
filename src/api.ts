@@ -53,6 +53,15 @@ export interface SettingsView {
   isCustom: boolean;
   keepHistory: boolean; // false = new downloads aren't added to history
   theme: Theme;
+  saveLog: boolean; // true = the diagnostic log is also saved to disk (D-31)
+}
+
+/** One line of the diagnostic log (D-31). */
+export interface LogLine {
+  atMs: number; // milliseconds since 1970
+  level: "info" | "warn" | "error";
+  text: string;
+  detail: string | null; // yt-dlp's own words or other technical detail
 }
 
 /** "system" follows Windows. Saved in settings.json (D-30). */
@@ -93,10 +102,16 @@ export const api = {
   openFile: (id: string) => invoke<void>("open_file", { id }),
   showInFolder: (id: string) => invoke<void>("show_in_folder", { id }),
   openLink: (url: string) => invoke<void>("open_link", { url }),
+  openProjectPage: (page: "github" | "privacy") => invoke<void>("open_project_page", { page }),
   getSettings: () => invoke<SettingsView>("get_settings"),
   setDefaultFolder: (folder: string | null) => invoke<SettingsView>("set_default_folder", { folder }),
   setKeepHistory: (keep: boolean) => invoke<SettingsView>("set_keep_history", { keep }),
   setTheme: (theme: Theme) => invoke<SettingsView>("set_theme", { theme }),
+  getActivity: () => invoke<LogLine[]>("get_activity"),
+  clearActivity: () => invoke<void>("clear_activity"),
+  setSaveLog: (save: boolean) => invoke<SettingsView>("set_save_log", { save }),
+  openLogFolder: () => invoke<void>("open_log_folder"),
+  deleteSavedLogs: () => invoke<number>("delete_saved_logs"),
 };
 
 /** Commands reject with a plain string message. */

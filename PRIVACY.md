@@ -37,16 +37,19 @@ _Last updated: 2026-11-23 (version 2.1.0)._
 | Your settings: default download folder, theme, and whether to keep history | `%APPDATA%\com.themysticturtle.videovacuum\settings.json` | So you don't have to pick them every time |
 | The window's own cache, which may include thumbnails | `%LOCALAPPDATA%\com.themysticturtle.videovacuum\` | Kept by WebView2 |
 | A temporary copy of a video's details | The same local folder | Lets the download reuse the lookup; deleted as soon as the download finishes |
+| The diagnostic **Log**: what the app did, with video titles, links, file locations and yt-dlp's messages | In memory only, unless you turn on **Settings → Save logs to disk**. Then: `%LOCALAPPDATA%\com.themysticturtle.videovacuum\logs\`, one file per day, deleted after 30 days | So you can see what happened and why something failed |
 
 None of this is sent anywhere.
 
 ## Deleting your data
 
 - **In the app:** open **History** or **Settings**.
-  - **Clear history…** deletes the whole list (it asks first).
+  - **Clear history** deletes the whole list (it asks first).
   - **Remove** on any entry deletes just that one.
   - Untick **Keep download history** and new downloads aren't recorded at all.
   - None of these touch your downloaded files.
+  - **Settings → Delete saved logs** removes every saved log file. With
+    **Save logs to disk** off (the default), the log disappears when you close the app.
 - **When uninstalling:** tick **"Delete the application data"** in the
   uninstaller. That removes both `com.themysticturtle.videovacuum` folders
   above. Without the tick, your history is kept in case you reinstall.

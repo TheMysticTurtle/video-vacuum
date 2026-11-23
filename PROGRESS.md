@@ -2,7 +2,7 @@
 
 Newest on top. Forward-looking items live in `ROADMAP.md`; the why lives in `docs/DECISIONS.md`.
 
-### Session 2026-11-23 — owner testing, the 403, Settings panel, v2.1.0 installer
+### Session 2026-11-23 — owner testing, the 403, Settings panel, Log, v2.1.0 installer
 **Goal:** the owner tries the build before anything reaches `main`, then a
 Settings panel, theme choice and layout polish from their feedback.
 
@@ -50,6 +50,34 @@ Settings panel, theme choice and layout polish from their feedback.
   - Window: at 1000 x 960 with the owner's video loaded the page is exactly
     960 px, with no scrollbar. A 3000 px window shrank to 1353 px, the
     monitor's usable height minus the frame.
+
+**Later the same day: bottom bar, diagnostic Log, History layout** (D-31):
+- Owner: a bar pinned to the bottom with the engine status, plus "the little
+  live action readout / log", session-only or saved, opened from that bar as
+  "a little expandable bottom window" to watch while using the app.
+- Built:
+  - `activity.rs` (session memory, optional daily files, 30-day cleanup).
+  - Log lines from lookups, downloads (streams, finishing steps, saved file,
+    errors with yt-dlp's last lines), tools, installs and updates.
+  - A docked, resizable Log panel with Copy / Clear.
+  - Settings → Save logs to disk, Open log folder, Delete saved logs.
+- The owner's History layout: a bigger title with Close, the search box with
+  a Clear button, then Keep history + Clear history on one row in a box, then
+  the list.
+- Also: no "…" on button labels, Settings box titles 14 → 16 px, and Privacy
+  Policy + GitHub links in the bar (fixed addresses in Rust).
+- Test results:
+  - clippy clean, `cargo test` 25 passed, tsc clean.
+  - Hidden window: the MP3 download logged every step through "Saved …
+    (0.5 MB)". A bad video logged "Lookup failed" with yt-dlp's words.
+  - Dragging the log's top edge resized it (220 → 370 px, remembered) and the
+    arrow keys did too. The side panels stop 10 px above the dock.
+  - Search Clear appears with text and empties the box.
+  - Save logs on wrote this session to `activity-2026-11-23.log` and kept
+    appending; off plus Delete removed it.
+  - `open_project_page` refused an unknown page.
+  - With the bar, a loaded video still fits 960 px with no scrolling.
+  - An exact repeat line (the tools check) is now skipped.
 
 **Where we landed:** on the feature branch, not merged. A new v2.1.0 installer
 is built for the owner.

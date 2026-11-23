@@ -1,10 +1,12 @@
 // Video Vacuum's window: Link → Video → Save as → progress, plus the History
-// and Settings panels (one open at a time).
+// and Settings panels (one open at a time), and a bottom bar with the engine
+// status and the Log toggle; the log docks above the bar (D-31).
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, errorText, MP3_DEFAULT_KBPS, type DownloadEvent, type SettingsView, type ToolsStatus, type VideoInfo } from "./api";
 import DownloadStatus, { type DownloadState } from "./components/DownloadStatus";
 import HistoryDrawer from "./components/HistoryDrawer";
+import LogPanel from "./components/LogPanel";
 import SettingsDrawer from "./components/SettingsDrawer";
 // The skinny banner, made from media/ by tools/make-brand-images.ps1.
 import headerBanner from "./assets/header-banner.png";
@@ -37,6 +39,20 @@ export default function App() {
   });
   const [download, setDownload] = useState<DownloadState>({ phase: "idle" });
   const [panel, setPanel] = useState<"history" | "settings" | null>(null);
+  const [logOpen, setLogOpen] = useState(false);
+  // The side panels stop above whatever is docked at the bottom (log + bar).
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const bottom = bottomRef.current;
+    const layout = layoutRef.current;
+    if (!bottom || !layout) return;
+    const update = () => layout.style.setProperty("--bottom-stack", `${bottom.offsetHeight}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(bottom);
+    return () => observer.disconnect();
+  }, []);
   const [historyKey, setHistoryKey] = useState(0);
   const [update, setUpdate] = useState({ busy: false, message: "" });
 
@@ -172,7 +188,7 @@ export default function App() {
   }
 
   return (
-    <div className={panel ? "layout drawer-open" : "layout"}>
+    <div ref={layoutRef} className={panel ? "layout drawer-open" : "layout"}>
       <header className="masthead">
         <div className="brand"><img src={headerBanner} alt="Video Vacuum" /></div>
         <div className="masthead-actions">
@@ -186,6 +202,7 @@ export default function App() {
           </button>
         </div>
       </header>
+      <div className="content">
       <main>
         {!tools && toolsMessage && <p className="message error" role="alert">{toolsMessage}</p>}
         {tools && !tools.ready && (
@@ -221,30 +238,58 @@ export default function App() {
         )}
         <DownloadStatus state={download} onCancel={cancel} onAnother={another} />
 
-        <footer>
-          <div className="engine">
-            <span className={tools?.ready ? "indicator ready" : "indicator"} />
-            <strong>{tools?.ready ? "Engine ready" : tools ? "Setup required" : toolsMessage ? "Engine unavailable" : "Checking tools…"}</strong>
-          </div>
-          <span>
-            yt-dlp {tools ? (tools.ytdlpVersion ?? "not found") : "…"}
-            {tools?.ytdlpVersion && (
-              <>
-                {" · "}
-                <button type="button" className="link" onClick={updateYtdlp} disabled={update.busy || running}>
-                  Update yt-dlp
-                </button>
-              </>
+      </main>
+      </div>
+
+      <div className="bottom-dock" ref={bottomRef}>
+        <LogPanel open={logOpen} onClose={() => setLogOpen(false)} saving={!!settings?.saveLog} />
+        <footer className="statusbar">
+          <div className="status-row">
+            <div className="engine">
+              <span className={tools?.ready ? "indicator ready" : "indicator"} />
+              <strong>{tools?.ready ? "Engine ready" : tools ? "Setup required" : toolsMessage ? "Engine unavailable" : "Checking tools…"}</strong>
+            </div>
+            <span>
+              yt-dlp {tools ? (tools.ytdlpVersion ?? "not found") : "…"}
+              {tools?.ytdlpVersion && (
+                <>
+                  {" · "}
+                  <button type="button" className="link" onClick={updateYtdlp} disabled={update.busy || running}>
+                    Update yt-dlp
+                  </button>
+                </>
+              )}
+              {" · "}
+              <button type="button" className="link" onClick={() => api.openProjectPage("privacy")}>
+                Privacy Policy
+              </button>
+              {" · "}
+              <button type="button" className="link" onClick={() => api.openProjectPage("github")}>
+                GitHub
+              </button>
+            </span>
+            {update.message && (
+              <span className="muted update-message" title={update.message}>
+                {update.message.split("\n")[0]}
+              </span>
             )}
-          </span>
-          {update.message && <p className="message pre">{update.message}</p>}
+            <button
+              type="button"
+              className={logOpen ? "secondary log-toggle on" : "secondary log-toggle"}
+              aria-expanded={logOpen}
+              aria-controls="log-panel"
+              onClick={() => setLogOpen(!logOpen)}
+            >
+              <span className="chevron" aria-hidden="true" /> Log
+            </button>
+          </div>
           {/* GPLv3 "Appropriate Legal Notices" (§0, §5d) */}
           <p className="small legal">
             Video Vacuum © 2026 TheMysticTurtle. Free software under the GNU GPL v3 or later, with no warranty. Full
             license: gnu.org/licenses/gpl-3.0
           </p>
         </footer>
-      </main>
+      </div>
 
       <HistoryDrawer
         open={panel === "history"}

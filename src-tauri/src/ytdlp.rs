@@ -93,17 +93,46 @@ impl Lookup {
 }
 
 /// Ask yt-dlp about a video. `-J` prints its info as JSON and downloads nothing.
-pub fn video_info(tools: &Tools, url: &str) -> Result<Lookup, String> {
+/// Also returns yt-dlp's warnings, for the diagnostic log.
+pub fn video_info(tools: &Tools, url: &str) -> Result<(Lookup, Vec<String>), FriendlyError> {
     let mut args = tools.ytdlp_base_args();
     args.extend(["-J".into(), "--".into(), url.into()]);
-    let output = tools.run_ytdlp(&args)?;
+    let output = tools
+        .run_ytdlp(&args)
+        .map_err(|message| FriendlyError { message, detail: String::new() })?;
+    let stderr = String::from_utf8_lossy(&output.stderr);
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(friendly_error(&stderr).message);
+        return Err(friendly_error(&stderr));
     }
-    let parsed: Value = serde_json::from_slice(&output.stdout)
-        .map_err(|err| format!("yt-dlp returned something unexpected: {err}"))?;
-    Ok(Lookup { info: parse_info(url, &parsed), info_json: output.stdout, fetched: SystemTime::now() })
+    let parsed: Value = serde_json::from_slice(&output.stdout).map_err(|err| FriendlyError {
+        message: "yt-dlp returned something unexpected.".into(),
+        detail: err.to_string(),
+    })?;
+    let lookup = Lookup { info: parse_info(url, &parsed), info_json: output.stdout, fetched: SystemTime::now() };
+    Ok((lookup, warnings(&stderr)))
+}
+
+/// yt-dlp's `WARNING:` lines, without the prefix.
+pub fn warnings(output: &str) -> Vec<String> {
+    output
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("WARNING:"))
+        .map(|w| w.trim().to_string())
+        .filter(|w| !w.is_empty())
+        .collect()
+}
+
+/// Plain words for yt-dlp's post-processing steps (its class names), for the log.
+pub fn step_words(step: &str, format: Format) -> String {
+    match step {
+        "Merger" => "Joining the video and audio into one file".into(),
+        "ExtractAudio" if format == Format::Mp3 => "Converting the audio to MP3".into(),
+        "ExtractAudio" => "Taking out the audio track".into(),
+        "VideoRemuxer" => "Checking the file's container".into(),
+        "MoveFiles" => "Moving the file into place".into(),
+        s if s.starts_with("Fixup") => "Tidying up the file".into(),
+        other => format!("Finishing up ({other})"),
+    }
 }
 
 /// The smallest thumbnail at least 400 px wide (sharp at 200 px on high-DPI
@@ -258,7 +287,8 @@ pub enum Line {
         speed: Option<f64>,
         eta: Option<u64>,
     },
-    Finishing,
+    /// A post-processing step began or ended (yt-dlp's name for it, e.g. "Merger").
+    Finishing(String),
     File(String),
     Other(String),
 }
@@ -283,8 +313,8 @@ pub fn parse_line(line: &str) -> Line {
             }
         }
         Line::Other(line.to_string())
-    } else if line.starts_with(STAGE_MARK) {
-        Line::Finishing
+    } else if let Some(step) = line.strip_prefix(STAGE_MARK) {
+        Line::Finishing(step.trim().to_string())
     } else if let Some(path) = line.strip_prefix(FILE_MARK) {
         Line::File(path.to_string())
     } else {
@@ -387,9 +417,15 @@ mod tests {
         assert!(matches!(parse_line(audio), Line::Progress { stage: "audio", percent, .. } if percent == 25.0));
         let unknown_total = r#"@@P {"status": "downloading", "downloaded_bytes": 10} avc1"#;
         assert!(matches!(parse_line(unknown_total), Line::Progress { percent, .. } if percent == 0.0));
-        assert_eq!(parse_line("@@S Merger"), Line::Finishing);
+        assert_eq!(parse_line("@@S Merger
+"), Line::Finishing("Merger".into()));
         assert_eq!(parse_line("@@F C:\\Videos\\a b.mp4\r"), Line::File("C:\\Videos\\a b.mp4".into()));
         assert!(matches!(parse_line("WARNING: something"), Line::Other(_)));
+        assert_eq!(warnings("[youtube] x\nWARNING: [youtube] No JS runtime\nWARNING:   \n"), ["[youtube] No JS runtime"]);
+        assert_eq!(step_words("Merger", Format::Mp4), "Joining the video and audio into one file");
+        assert_eq!(step_words("ExtractAudio", Format::Mp3), "Converting the audio to MP3");
+        assert_eq!(step_words("FixupM3u8", Format::Mp4), "Tidying up the file");
+        assert_eq!(step_words("SomethingNew", Format::Mkv), "Finishing up (SomethingNew)");
     }
 
     #[test]

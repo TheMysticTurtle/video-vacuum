@@ -38,7 +38,8 @@ name and folder, download. It keeps a searchable History drawer. Open source
   noreply email (D-26). v1 is kept as tag `v1.0.0-local-web`.
   **v2.1.0 is on `feature/history-privacy-mp3`, NOT on `main`:** history
   privacy controls (D-28), MP3 with a chosen bitrate (D-27), the author name
-  TheMysticTurtle (D-29), the Settings panel / theme / layout polish (D-30).
+  TheMysticTurtle (D-29), the Settings panel / theme / layout polish (D-30),
+  the bottom bar and the diagnostic Log (D-31).
   Waiting on the owner to test the installer and OK the merge.
 - **Author:** always `TheMysticTurtle <101545919+TheMysticTurtle@users.noreply.github.com>`
   (repo config and global), in commits, copyright lines and credits. Never
@@ -64,6 +65,7 @@ name and folder, download. It keeps a searchable History drawer. Open source
 | `src-tauri/src/ytdlp.rs` | Video info, format options, progress lines, plain-word errors, safe file names |
 | `src-tauri/src/download.rs` | One download: unique name, run, progress, cancel, cleanup |
 | `src-tauri/src/store.rs` | History + settings JSON (atomic, versioned) |
+| `src-tauri/src/activity.rs` | The diagnostic log: session memory, optional daily files, 30-day cleanup (D-31) |
 | `src/App.tsx`, `src/components/` | The window: Link → Video → Save as → status, History drawer |
 | `src/api.ts` | Typed calls to the Rust commands |
 

@@ -1,6 +1,7 @@
 // The Settings panel on the right, opened by the masthead's "Settings" button
-// (D-30): default download folder, theme (System / Light / Dark) and the same
-// history controls the History panel shows. Every value lives in settings.json
+// (D-30): default download folder, theme (System / Light / Dark), the same
+// history controls the History panel shows, and the diagnostic log's
+// "Save logs" choice (D-31). Every value lives in settings.json
 // and comes back from the Rust command that saved it.
 
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
@@ -55,7 +56,7 @@ export default function SettingsDrawer({ open, onClose, settings, onSettingsChan
             </p>
             <div className="row">
               <button type="button" className="secondary" onClick={changeFolder}>
-                Change…
+                Change
               </button>
               {settings.isCustom && (
                 <button type="button" className="secondary" onClick={() => save(() => api.setDefaultFolder(null))}>
@@ -89,7 +90,43 @@ export default function SettingsDrawer({ open, onClose, settings, onSettingsChan
             <HistoryControls settings={settings} onSettingsChange={onSettingsChange} onCleared={onHistoryCleared} />
           </section>
 
-          {message && <p className="message error">{message}</p>}
+          <section className="settings">
+            <span className="label">Log</span>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={settings.saveLog}
+                onChange={(e) => save(() => api.setSaveLog(e.target.checked))}
+              />
+              Save logs to disk
+            </label>
+            <p className="muted small">
+              {settings.saveLog
+                ? "Each day's log is saved on this computer and deleted after 30 days."
+                : "Off: the log is kept for this session only and is gone when you close the app."}
+            </p>
+            <div className="row">
+              <button type="button" className="secondary" onClick={() => save(async () => (await api.openLogFolder(), settings))}>
+                Open log folder
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                onClick={async () => {
+                  try {
+                    const removed = await api.deleteSavedLogs();
+                    setMessage(removed ? `Deleted ${removed} saved log file${removed === 1 ? "" : "s"}.` : "No saved logs to delete.");
+                  } catch (e) {
+                    setMessage(errorText(e));
+                  }
+                }}
+              >
+                Delete saved logs
+              </button>
+            </div>
+          </section>
+
+          {message && <p className="message">{message}</p>}
         </div>
       )}
     </aside>

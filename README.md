@@ -56,7 +56,14 @@ most listeners, and 320 kbps adds extra margin at about two-thirds more file
 size. Pick M4A for the original.
 
 **If downloads start failing,** YouTube probably changed something. Click
-**Update yt-dlp** at the bottom of the window.
+**Update yt-dlp** in the bar at the bottom of the window.
+
+**Want to see what it's doing?** Click **Log** in the bottom bar. A panel opens
+above the bar and shows each step as it happens, with yt-dlp's own words when
+something goes wrong. You can keep using the app while it's open. Drag its top
+edge to resize it. **Copy** puts the whole log on the clipboard, for a bug
+report. The log is kept for the session only, unless you turn on
+**Settings → Save logs to disk** (kept 30 days).
 
 ## Build it yourself
 

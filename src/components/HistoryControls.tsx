@@ -1,4 +1,4 @@
-// "Keep download history" and "Clear history…", shown in two places: above the
+// "Keep download history" and "Clear history", shown in two places: above the
 // list in the History panel and in the Settings panel (D-30). Both copies read
 // the same saved setting (settings.json → keepHistory, via the app's one
 // `settings` state) and change it through the same command, so they always
@@ -12,7 +12,7 @@ interface Props {
   onSettingsChange: (settings: SettingsView) => void;
   /** Called after the list was cleared, so any open list reloads. */
   onCleared: () => void;
-  /** False greys out "Clear history…" (the History panel knows when the list is empty). */
+  /** False greys out "Clear history" (the History panel knows when the list is empty). */
   canClear?: boolean;
 }
 
@@ -42,13 +42,20 @@ export default function HistoryControls({ settings, onSettingsChange, onCleared,
 
   return (
     <div className="history-controls">
-      <label className="check">
-        <input type="checkbox" checked={settings.keepHistory} onChange={(e) => setKeepHistory(e.target.checked)} />
-        Keep download history
-      </label>
+      <div className="history-controls-row">
+        <label className="check">
+          <input type="checkbox" checked={settings.keepHistory} onChange={(e) => setKeepHistory(e.target.checked)} />
+          Keep download history
+        </label>
+        {!confirmClear && (
+          <button type="button" className="secondary" onClick={() => setConfirmClear(true)} disabled={!canClear}>
+            Clear history
+          </button>
+        )}
+      </div>
       {!settings.keepHistory && <p className="muted small">History is off. New downloads aren't recorded.</p>}
 
-      {confirmClear ? (
+      {confirmClear && (
         <div className="confirm" role="alert">
           <p className="small">Clear all history? This can't be undone. Your downloaded files stay where they are.</p>
           <div className="row">
@@ -60,10 +67,6 @@ export default function HistoryControls({ settings, onSettingsChange, onCleared,
             </button>
           </div>
         </div>
-      ) : (
-        <button type="button" className="secondary" onClick={() => setConfirmClear(true)} disabled={!canClear}>
-          Clear history…
-        </button>
       )}
       {message && <p className="message error">{message}</p>}
     </div>

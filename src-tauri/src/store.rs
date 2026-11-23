@@ -60,6 +60,9 @@ pub struct Settings {
     /// Light, dark, or follow Windows (D-30). Missing in older files = system.
     #[serde(default)]
     pub theme: Theme,
+    /// Save the diagnostic log to disk (D-31). Off (session only) by default.
+    #[serde(default)]
+    pub save_log: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -73,7 +76,7 @@ pub enum Theme {
 
 impl Default for Settings {
     fn default() -> Self {
-        Settings { default_folder: None, keep_history: true, theme: Theme::System }
+        Settings { default_folder: None, keep_history: true, theme: Theme::System, save_log: false }
     }
 }
 
@@ -163,6 +166,11 @@ impl Store {
 
     pub fn set_theme(&mut self, theme: Theme) -> Result<(), String> {
         self.settings.theme = theme;
+        self.save_settings()
+    }
+
+    pub fn set_save_log(&mut self, save: bool) -> Result<(), String> {
+        self.settings.save_log = save;
         self.save_settings()
     }
 
@@ -336,6 +344,7 @@ mod tests {
         let store = Store::open(dir.clone());
         assert!(store.settings.keep_history);
         assert_eq!(store.settings.theme, Theme::System);
+        assert!(!store.settings.save_log, "logs are session-only unless turned on");
         assert_eq!(store.settings.default_folder.as_deref(), Some(r"D:\Clips"));
         let _ = fs::remove_dir_all(dir);
     }
