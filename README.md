@@ -6,6 +6,8 @@ quality, name and folder, click **Download**.
 It runs on your computer using [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 Nothing is uploaded anywhere.
 
+**What's new:** see the [changelog](CHANGELOG.md) for what changed in each version.
+
 ## Use it responsibly
 
 Only download videos you have the right to save: your own uploads, openly
