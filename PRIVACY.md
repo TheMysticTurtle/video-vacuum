@@ -7,7 +7,7 @@ developer never receives anything from it.
 Everything below happens on your own computer, or directly between your
 computer and the services named, only when you use that feature.
 
-_Last updated: 2026-11-23 (version 2.1.0)._
+_Last updated: 2026-11-23 (version 2.2.0)._
 
 ## What leaves your computer
 
@@ -15,7 +15,8 @@ _Last updated: 2026-11-23 (version 2.1.0)._
 |---|---|---|
 | Look up or download a video | **YouTube** (through the open-source [yt-dlp](https://github.com/yt-dlp/yt-dlp) tool) | Your IP address and which video, the same as watching it in a web browser. Video Vacuum signs in to nothing and sends no cookies. |
 | See a video's thumbnail | YouTube's image server (`i.ytimg.com`), the only outside address the app's window is allowed to load | The same as above |
-| Click **Install missing tools** or **Update yt-dlp** | Windows' own installer, **winget**, which contacts Microsoft's package list and downloads from the tools' official sites (GitHub and others) | A normal software download |
+| Click **Update yt-dlp** | GitHub, through yt-dlp's own updater, which downloads the newest yt-dlp from its official releases | A normal software download |
+| Click **Restore** (only shown if a bundled tool is missing) | GitHub, to download that tool's exact pinned version from its official release | A normal software download |
 | Click a video title or channel name | Your web browser opens the page on YouTube | Whatever your browser and YouTube normally see |
 
 **Parts of Windows that Video Vacuum relies on:**

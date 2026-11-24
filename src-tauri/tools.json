@@ -1,0 +1,50 @@
+{
+  "_about": "The tools bundled with Video Vacuum (D-32). One source of truth: tools/fetch-tools.ps1 and the Release workflow download exactly these files and check the SHA-256; the app compiles this in to check versions and to restore a missing tool. 'version' is also the minimum the app accepts (yt-dlp may update itself to newer).",
+  "tools": [
+    {
+      "id": "yt-dlp",
+      "name": "yt-dlp",
+      "purpose": "Downloads the video from YouTube.",
+      "repo": "https://github.com/yt-dlp/yt-dlp",
+      "license": "Unlicense",
+      "version": "2026.11.23",
+      "files": ["yt-dlp.exe"],
+      "versionArgs": ["--version"],
+      "download": {
+        "url": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.11.23/yt-dlp.exe",
+        "sha256": "622ed48023cac1daa52a3bf3a6ac38f03514de214b5f0fa069389fd0f6d17e5c",
+        "kind": "exe"
+      }
+    },
+    {
+      "id": "deno",
+      "name": "Deno",
+      "purpose": "Runs YouTube's player code, which yt-dlp needs to get the video.",
+      "repo": "https://github.com/denoland/deno",
+      "license": "MIT",
+      "version": "2.9.8",
+      "files": ["deno.exe"],
+      "versionArgs": ["--version"],
+      "download": {
+        "url": "https://github.com/denoland/deno/releases/download/v2.9.8/deno-x86_64-pc-windows-msvc.zip",
+        "sha256": "cba84b26e0df5ae7f74fc66b86a95b866872a86292ebd84fa1e959927edd93bf",
+        "kind": "zip"
+      }
+    },
+    {
+      "id": "ffmpeg",
+      "name": "FFmpeg",
+      "purpose": "Joins the video and audio into one file, and makes MP3s. A small build made for Video Vacuum.",
+      "repo": "https://github.com/FFmpeg/FFmpeg",
+      "license": "LGPL-2.1-or-later",
+      "version": "9.1",
+      "files": ["ffmpeg.exe", "ffprobe.exe"],
+      "versionArgs": ["-version"],
+      "download": {
+        "url": "https://github.com/TheMysticTurtle/video-vacuum/releases/download/tools-ffmpeg-9.1/video-vacuum-ffmpeg-9.1-win64.zip",
+        "sha256": "1262934333ae5a34bc226170cae0860e43ec28221adb93bc33bd2401db02c0e5",
+        "kind": "zip"
+      }
+    }
+  ]
+}

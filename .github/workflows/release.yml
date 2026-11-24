@@ -82,6 +82,13 @@ jobs:
       - name: Install frontend packages (exactly as locked)
         run: npm ci
 
+      # The tools shipped inside the app (D-32): exactly the versions pinned in
+      # src-tauri/tools.json, each checked against its SHA-256. Needed before
+      # the Rust steps, because the build bundles the tools folder.
+      - name: Fetch the bundled tools (pinned, checksum-checked)
+        shell: pwsh
+        run: ./tools/fetch-tools.ps1
+
       # ── The quality gate (same as CLAUDE.md) ──
       - name: Type-check the UI
         run: npm run check
@@ -111,8 +118,10 @@ jobs:
 
             1. Download the **`…_x64-setup.exe`** file below and run it. It installs just for you, with no admin prompt, and adds Video Vacuum to the Start Menu.
             2. The installer isn't code-signed yet, so Windows may say **"Windows protected your PC"**. Click **More info → Run anyway**.
-            3. The first time, if yt-dlp, ffmpeg or deno is missing, click **Install missing tools** in the app.
+            3. That's it: everything it needs comes inside the installer (yt-dlp, Deno and a small FFmpeg build). Nothing else is downloaded.
 
             If downloads ever start failing, click **Update yt-dlp** at the bottom of the window.
+
+            **Included tools:** [yt-dlp](https://github.com/yt-dlp/yt-dlp) (Unlicense), [Deno](https://github.com/denoland/deno) (MIT) and FFmpeg with LAME (LGPL; built by the [Build FFmpeg](https://github.com/TheMysticTurtle/video-vacuum/blob/main/.github/workflows/build-ffmpeg.yml) workflow from their official source). Versions and checksums: [`src-tauri/tools.json`](https://github.com/TheMysticTurtle/video-vacuum/blob/main/src-tauri/tools.json). License texts are in the app's `tools\licenses` folder.
 
             Free software under the GNU GPL v3 or later. Not affiliated with YouTube or Google.

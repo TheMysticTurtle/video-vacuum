@@ -41,7 +41,14 @@ name and folder, download. It keeps a searchable History drawer. Open source
   author name TheMysticTurtle (D-29), the Settings panel / theme / layout
   polish (D-30), the bottom bar and the diagnostic Log (D-31), and README
   screenshots. The owner tested the installer ("it's beautiful! seems to work
-  great"). Nothing is queued; the owner picks from the ROADMAP backlog.
+  great").
+  **In progress: v2.2.0 on `feature/bundled-tools`** (not merged):
+  - yt-dlp, Deno and a small FFmpeg ship inside the installer (D-32):
+    pinned in `src-tauri/tools.json`, fetched by `tools/fetch-tools.ps1`
+    into `src-tauri/tools/` (git-ignored; needed before any Rust build).
+  - The fix for an MP3 deleting a same-name WebM (D-33).
+  - Waiting on the owner: publish the FFmpeg zip as the `tools-ffmpeg-9.1`
+    release, and test the installer.
 - **Author:** always `TheMysticTurtle <101545919+TheMysticTurtle@users.noreply.github.com>`
   (repo config and global), in commits, copyright lines and credits. Never
   "TheMysticTestudine" (another account) and never a personal email.
@@ -62,7 +69,10 @@ name and folder, download. It keeps a searchable History drawer. Open source
 |---|---|
 | `src-tauri/src/lib.rs` | The commands the window calls, app state, startup |
 | `src-tauri/src/link.rs` | Pasted text → clean YouTube watch link (tests: every link form) |
-| `src-tauri/src/tools.rs` | Finding yt-dlp / ffmpeg / deno, winget install and update |
+| `src-tauri/src/tools.rs` | The bundled tools (D-32): version check, Restore, yt-dlp `-U` |
+| `src-tauri/tools.json` | Pinned tool versions, official downloads, SHA-256 |
+| `tools/fetch-tools.ps1` | Downloads the pinned tools into `src-tauri/tools/` |
+| `.github/workflows/build-ffmpeg.yml` | Builds the trimmed LGPL FFmpeg zip |
 | `src-tauri/src/ytdlp.rs` | Video info, format options, progress lines, plain-word errors, safe file names |
 | `src-tauri/src/download.rs` | One download: unique name, run, progress, cancel, cleanup |
 | `src-tauri/src/store.rs` | History + settings JSON (atomic, versioned) |

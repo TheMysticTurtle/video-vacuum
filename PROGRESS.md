@@ -2,6 +2,74 @@
 
 Newest on top. Forward-looking items live in `ROADMAP.md`; the why lives in `docs/DECISIONS.md`.
 
+### Session 2026-11-23 (night) — the tools ship inside the installer (v2.2.0)
+**Goal:** owner: "i want our installer to have everything they need in one
+clean go without any sketchy downloading of an extra 600mb of crap", "like
+normal software", with a version check, Update yt-dlp kept, and a banner
+that explains each tool and offers to restore it.
+
+**Decided:**
+- Bundle the tools (D-32). Owner: "Deno sounds decent", "i dont even wanna
+  dick with quickJS".
+- Deno is yt-dlp's recommended JavaScript runtime (yt-dlp's EJS wiki).
+- The winget installer step was dropped: "that sounds sketchy as fuck".
+
+**Spike** (`spike/bundled-tools`):
+- **Downloads:** the official yt-dlp 2026.11.23 and Deno 2.9.8, both with
+  matching SHA-256.
+- **FFmpeg build:** FFmpeg 9.1 + LAME 3.100, cross-compiled in GitHub Actions
+  (GPG and SHA-256 verified), `--disable-everything` plus what we use, LGPL.
+  `ffmpeg.exe` came out at 4.9 MB and `ffprobe.exe` at 4.6 MB.
+- **Downloads with only those tools:** 10 of 10 worked.
+- **yt-dlp finds the tools itself:** it finds FFmpeg and Deno in its own
+  folder with no flags.
+- **Updating in place:** `yt-dlp -U` updated a copy from 2026.10.26 to
+  2026.11.23 in place.
+- **Size:** about 55 MB compressed and 133 MB installed, against about
+  612 MB of winget packages.
+
+**Built** (`feature/bundled-tools`):
+- **Build FFmpeg workflow** (run 45328682652). The first two runs looked
+  stuck: installing the full mingw-w64 package takes 34 minutes. Installing
+  only the 64-bit C compiler took 1 minute, and the run took 3 minutes in
+  all.
+- **The pins file:** `src-tauri/tools.json`.
+- **The fetch script:** `tools/fetch-tools.ps1`.
+- **tools.rs, rewritten:** version check, Restore (Windows' curl and tar
+  plus a `sha2` checksum), yt-dlp `-U`.
+- **The banner:** what each tool does, its license and repository link, and
+  Restore.
+- **Release workflow:** a fetch step.
+- **License texts:** shipped in `tools\licenses`.
+- **Docs:** D-32 and the README "What's inside" section.
+- **Version** 2.2.0.
+
+**Found and fixed (D-33):**
+- In released v2.1.0, an MP3 download deleted an existing same-name WebM:
+  yt-dlp downloads the audio as `name.webm`, takes the existing file as
+  "already downloaded", converts it, then deletes it.
+- Names now also count the in-between files each format can make.
+- Owner: "Yes, fix it here".
+
+**Test results:**
+- clippy clean, `cargo test` 30 passed, tsc clean.
+- Hidden window with no winget folders on PATH:
+  - Every format saved.
+  - Deno deleted: the banner appeared, Restore fetched the official file,
+    and the checksum was verified (identical to the bundled copy).
+  - An old yt-dlp was flagged, and Update yt-dlp fixed it. The banner now
+    clears afterwards (that was fixed during the tests).
+  - Restore for the unpublished FFmpeg URL failed cleanly.
+  - WebM, then MP3/M4A/MKV/MP4 of the same video: all five files kept, and
+    the WebM was byte-identical.
+
+**Where we landed:** on `feature/bundled-tools`, not merged.
+
+**Next:**
+1. The owner OKs publishing the FFmpeg zip as the `tools-ffmpeg-9.1` release.
+2. The owner tests the 2.2.0 installer.
+3. Merge, push, release.
+
 ### Session 2026-11-23 — owner testing, the 403, Settings panel, Log, v2.1.0 installer
 **Goal:** the owner tries the build before anything reaches `main`, then a
 Settings panel, theme choice and layout polish from their feedback.

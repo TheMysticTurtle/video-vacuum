@@ -17,7 +17,7 @@ import VideoCard from "./components/VideoCard";
 
 export default function App() {
   const [tools, setTools] = useState<ToolsStatus | null>(null);
-  const [installing, setInstalling] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [toolsMessage, setToolsMessage] = useState("");
   const [settings, setSettings] = useState<SettingsView | null>(null);
 
@@ -148,17 +148,17 @@ export default function App() {
     document.getElementById("link")?.focus();
   }
 
-  async function install() {
-    setInstalling(true);
+  async function restore() {
+    setRestoring(true);
     setToolsMessage("");
     try {
-      const status = await api.installTools();
+      const status = await api.restoreTools();
       setTools(status);
-      if (!status.ready) setToolsMessage(`Still missing: ${status.missing.join(", ")}.`);
+      if (!status.ready) setToolsMessage("Some tools still aren't right. The Log has the details.");
     } catch (e) {
       setToolsMessage(errorText(e));
     } finally {
-      setInstalling(false);
+      setRestoring(false);
     }
   }
 
@@ -168,6 +168,8 @@ export default function App() {
       const before = tools?.ytdlpVersion;
       const result = await api.updateYtdlp();
       setTools((t) => (t ? { ...t, ytdlpVersion: result.version } : t));
+      // Re-check every tool, so a banner about an old yt-dlp goes away (D-32).
+      api.checkTools().then(setTools).catch(() => undefined);
       // Plain words for the common outcomes; the full output otherwise.
       const message =
         result.version && result.version !== before
@@ -206,7 +208,7 @@ export default function App() {
       <main>
         {!tools && toolsMessage && <p className="message error" role="alert">{toolsMessage}</p>}
         {tools && !tools.ready && (
-          <ToolsBanner tools={tools} installing={installing} message={toolsMessage} onInstall={install} />
+          <ToolsBanner tools={tools} restoring={restoring} message={toolsMessage} onRestore={restore} />
         )}
 
         <LinkBox

@@ -20,10 +20,38 @@ gotchas hit along the way. Versions are as of **2026-11-22**.
 | WebView2 | runtime 157 on the dev PC | — | Built into Windows 10 (1803+) / 11 | Renders the window |
 | NSIS (fetched by Tauri) | 3.13 + `nsis_tauri_utils` 0.5.3 | zlib/libpng | github.com/tauri-apps/binary-releases | Building the installer (build tool, not shipped) |
 
-**Outside programs the app runs (not shipped, installed separately; D-15):**
-- yt-dlp: Unlicense, https://github.com/yt-dlp/yt-dlp. winget `yt-dlp.yt-dlp`.
-- FFmpeg: GPL build, winget `yt-dlp.FFmpeg`. Its LAME encoder (`libmp3lame`, LGPL) makes the MP3s (D-27); checked with `ffmpeg -encoders`.
-- Deno: MIT, winget `DenoLand.Deno`.
+**Bundled tools (shipped in `<install dir>\tools\`; D-32).** Pinned in
+`src-tauri/tools.json`, with each version, official download and SHA-256:
+
+| Tool | Version | License | Official source | Used for |
+|---|---|---|---|---|
+| yt-dlp (`yt-dlp.exe`) | 2026.11.23 | Unlicense (bundled third-party notices in `yt-dlp-THIRD_PARTY_LICENSES.txt`) | github.com/yt-dlp/yt-dlp releases | Downloading |
+| Deno (`deno.exe`) | 2.9.8 | MIT | github.com/denoland/deno releases (the full `deno` zip, not `denort`) | YouTube's JS challenges (yt-dlp's recommended runtime; minimum 2.3.0) |
+| FFmpeg (`ffmpeg.exe`, `ffprobe.exe`) | 9.1 + LAME 3.100 | LGPL-2.1-or-later (no `--enable-gpl`) | Built by `.github/workflows/build-ffmpeg.yml` from ffmpeg.org (GPG-verified) and SourceForge LAME (SHA-256 pinned); published as the `tools-ffmpeg-9.1` release | Merging, repackaging, MP3 |
+
+- **Trimmed FFmpeg:** `--disable-everything` plus only these:
+  - the demuxers mov, matroska, mp3, aac, ogg, mpegts, wav and flac
+  - the muxers mp4, ipod, mov, matroska, webm, mp3, adts, ogg and opus
+  - the matching parsers and bitstream filters
+  - the decoders aac, opus, vorbis, mp3, flac and pcm
+  - `libmp3lame`
+  - the filters aresample, aformat, anull, atrim, null, format, trim and copy
+  - no network
+
+  Result: 4.9 MB + 4.6 MB, against about 160 MB each for full builds.
+  Spike run 45319314183 passed all 10 format tests.
+- **License texts** ship in `tools\licenses\`:
+  - `src-tauri/tools-licenses/` (yt-dlp, its third-party notices, Deno)
+  - the FFmpeg zip's `FFmpeg-LICENSE.md`, `COPYING.LGPLv2.1.txt`,
+    `LAME-COPYING.txt` and `SOURCES.txt`
+- **To change a tool's version:**
+  1. Update `tools.json` (version, URL, SHA-256).
+  2. For FFmpeg, run Build FFmpeg, test the zip, publish it as a new
+     `tools-ffmpeg-<v>` release, then pin it.
+  3. Re-run `tools/fetch-tools.ps1`.
+- **Windows' own `curl.exe` and `tar.exe`** (System32, Windows 10 1803+/11)
+  do Restore's download and unzip. They're called by full path. `sha2`
+  (RustCrypto, MIT OR Apache-2.0) checks the checksum.
 
 ### License scan (2026-11-22)
 
@@ -39,9 +67,14 @@ with the app's own GPL-3.0-or-later (D-20).
 
 ```sh
 npm install
+powershell -ExecutionPolicy Bypass -File tools/fetch-tools.ps1   # bundled tools -> src-tauri/tools/ (checksum-checked)
 npm run tauri dev      # development window with hot reload
 npm run tauri build    # src-tauri/target/release/bundle/nsis/Video Vacuum_<version>_x64-setup.exe
 ```
+
+- The Rust build bundles `src-tauri/tools/` (a Tauri resource), so it fails
+  with "resource path `tools` doesn't exist" until the fetch script has run.
+- Before the FFmpeg zip is published: `tools/fetch-tools.ps1 -FfmpegZip <zip>`.
 
 - Release profile: LTO, `opt-level = "s"`, stripped. The exe is about 7 MB; the installer about 2.1 MB built locally, 2.56 MB from the Release workflow (v2.0.0; the brand art added ~0.4 MB).
 - The installer is NSIS, per user (`installMode: currentUser`), no admin prompt. WebView2 uses Tauri's default `downloadBootstrapper`.
@@ -53,14 +86,14 @@ cd src-tauri && cargo clippy --all-targets -- -D warnings && cargo test
 npm run check   # tsc --noEmit
 ```
 
-The Rust tests (25) cover:
+The Rust tests (30) cover:
 - link cleanup (12 good forms, 9 bad)
 - file-name safety
 - progress-line parsing
 - plain-word errors
 - yt-dlp JSON → card info
 - format options, including MP3 bitrates and refusing a bitrate not on the list
-- unique naming and cleanup that only touches its own files
+- unique naming (no name whose in-between file would clash with an existing file, D-33) and cleanup that only touches its own files
 - history/settings save, reload and newer-file protection
 - removing an entry, clearing history, history turned off (nothing written,
   but the session can still open the file), v2.0.0 settings reading as "keep history"
@@ -68,8 +101,10 @@ The Rust tests (25) cover:
 - the diagnostic log: UTC dates (round trip, leap day), the file line format,
   memory-only until saving is on, 30-day cleanup that touches only our files,
   the 2000-line cap, skipping exact repeats; yt-dlp warnings and step names
-- PATH variable expansion
-- winget detection
+- bundled tools: `tools.json` is complete, versions parsed from each tool's
+  output, numeric version comparison, SHA-256 enforcement, a missing folder
+  reports every tool missing, yt-dlp gets the bundled paths, files found in
+  zip subfolders
 
 ## 4. Testing the real window (hidden, off the owner's screen)
 
