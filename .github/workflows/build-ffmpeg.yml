@@ -36,14 +36,18 @@ env:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    # A normal run takes about 3 minutes; a hung package mirror shouldn't hold a runner for hours.
-    timeout-minutes: 30
+    # Installing the compiler can take a while on GitHub's mirrors (34 min in the spike
+    # with the full mingw-w64 set); the build itself takes about 2 minutes.
+    timeout-minutes: 60
     steps:
       - name: Install the cross-compiler and tools
-        timeout-minutes: 10
+        timeout-minutes: 45
+        # Only the 64-bit C cross-compiler (FFmpeg and LAME are C). The full
+        # "mingw-w64" package also brings C++ and 32-bit compilers we don't use.
         run: |
-          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update -q
-          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y -q --no-install-recommends             mingw-w64 nasm pkg-config make gnupg xz-utils zip
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=60 update -q
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=60 install -y -q --no-install-recommends             gcc-mingw-w64-x86-64 binutils-mingw-w64-x86-64 mingw-w64-x86-64-dev             nasm pkg-config make gnupg xz-utils zip
+          x86_64-w64-mingw32-gcc --version | head -1
 
       - name: Build LAME (static, MP3 encoder only)
         run: |
