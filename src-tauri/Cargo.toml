@@ -1,6 +1,6 @@
 [package]
 name = "video-vacuum"
-version = "2.1.0"
+version = "2.2.0"
 description = "Video Vacuum: a small desktop app that downloads YouTube videos with yt-dlp."
 authors = ["TheMysticTurtle"]
 license = "GPL-3.0-or-later"

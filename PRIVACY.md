@@ -7,7 +7,7 @@ developer never receives anything from it.
 Everything below happens on your own computer, or directly between your
 computer and the services named, only when you use that feature.
 
-_Last updated: 2026-11-23 (version 2.1.0)._
+_Last updated: 2026-11-23 (version 2.2.0)._
 
 ## What leaves your computer
 

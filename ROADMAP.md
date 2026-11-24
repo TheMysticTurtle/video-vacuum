@@ -30,7 +30,18 @@
 
 ## 2. Next
 
-Nothing queued. The owner picks from the backlog.
+**v2.2.0: the tools ship inside the installer** (D-32), on `feature/bundled-tools`:
+
+| | What | State |
+|---|---|---|
+| `[x]` | Spike: trimmed FFmpeg 4.9 + 4.6 MB; 10/10 formats with bundled tools only; `yt-dlp -U` in place | done |
+| `[x]` | Build FFmpeg workflow (run 45328682652); zip pinned in `src-tauri/tools.json` | done |
+| `[x]` | App: bundled `tools` folder, version check, Restore (checksum-checked), Update yt-dlp via `-U`; winget code removed | built and tested in a hidden window |
+| `[x]` | Release workflow fetches the pinned tools; `tools/fetch-tools.ps1` for local builds | done |
+| `[x]` | **Fix (D-33):** an MP3 download could delete a same-name WebM (bug in released v2.1.0) | fixed and tested |
+| `[?]` | **Publish the FFmpeg zip once** as the `tools-ffmpeg-9.1` release (needed by Restore and the Release workflow) | waiting on the owner's OK |
+| `[?]` | **Owner tests the v2.2.0 installer**, then merge into `main` | waiting on the owner |
+| `[ ]` | Release v2.2.0; delete the `spike/bundled-tools` branch | after the owner's OK |
 
 ## 3. Milestones
 
