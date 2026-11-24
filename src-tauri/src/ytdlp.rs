@@ -62,14 +62,26 @@ impl Format {
         matches!(self, Format::M4a | Format::Mp3)
     }
 
-    /// The extensions the finished file can end up with.
-    pub fn extensions(self) -> &'static [&'static str] {
+    /// A name is taken for this format if a file with that name and one of
+    /// these extensions exists (D-33). That's the finished file's type, plus
+    /// what yt-dlp may first save under the *same* name before converting or
+    /// repackaging it. yt-dlp treats such a file as "already downloaded",
+    /// uses it as its source, then deletes it as the "original". Seen with
+    /// MP3: YouTube's audio arrives as `name.webm`, so an existing WebM video
+    /// called `name.webm` was turned into the MP3 and deleted.
+    /// (Merged downloads use `name.f137.mp4`-style parts, which can't clash.)
+    pub fn collides_with(self) -> &'static [&'static str] {
         match self {
-            Format::Mp4 => &["mp4"],
-            Format::Webm => &["webm", "mkv"], // falls back to .mkv
-            Format::Mkv => &["mkv"],
-            Format::M4a => &["m4a"],
-            Format::Mp3 => &["mp3"],
+            // A single-file source may be repackaged into .mp4 (--remux-video).
+            Format::Mp4 => &["mp4", "webm", "mkv", "mov"],
+            // Merged into .webm, or .mkv when the pair doesn't fit WebM; no repackaging.
+            Format::Webm => &["webm", "mkv"],
+            // A single-file source may be repackaged into .mkv.
+            Format::Mkv => &["mkv", "mp4", "webm", "mov"],
+            // Audio is downloaded as .m4a (or .webm/.mp4 when no M4A exists), then extracted.
+            Format::M4a => &["m4a", "webm", "mp4", "opus", "ogg"],
+            // Audio is downloaded as .webm (Opus), .m4a or .mp4, then converted.
+            Format::Mp3 => &["mp3", "webm", "m4a", "mp4", "opus", "ogg"],
         }
     }
 }

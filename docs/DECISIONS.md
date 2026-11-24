@@ -430,3 +430,37 @@ setting are gone; the folder lives in Settings only.
 - `winreg` is gone, and so is all the winget code.
 
 **Supersedes:** D-15.
+
+### D-33 ✅ A name is taken if any file yt-dlp would make or use under it exists (2026-11-23)
+**Decision:**
+- Each format lists the extensions that can't share its name
+  (`Format::collides_with`): the finished file's type, plus what yt-dlp
+  may first save under the same name before converting or repackaging.
+  - MP3: mp3, webm, m4a, mp4, opus, ogg
+  - M4A: m4a, webm, mp4, opus, ogg
+  - MP4: mp4, webm, mkv, mov
+  - MKV: mkv, mp4, webm, mov
+  - WebM: webm, mkv
+- If any of those exists, the download gets "name (2)".
+
+**Why:**
+- Found while testing D-32 (2026-11-23) and present in the released v2.1.0.
+- After downloading "Me at the zoo" as WebM, an MP3 download of the same
+  video deleted the WebM.
+- To make an MP3, yt-dlp downloads YouTube's audio as `Me at the zoo.webm`.
+  That file already existed, so yt-dlp treated it as "already downloaded",
+  converted it to MP3 and then deleted the "original".
+- Reproduced with yt-dlp alone: "has already been downloaded" … "Deleting
+  original file x.webm". A separate `-P temp:` folder doesn't help, because
+  yt-dlp still checks the destination folder.
+- Owner: "Yes, fix it here".
+
+**Consequence:**
+- A download can now get "(2)" when a different type with the same name
+  exists, if they could clash; types that can't clash still share a name.
+  For example, an MP4 next to `name.m4a` keeps the plain name.
+- Tested by unit tests for every clash, plus the real sequence: WebM, then
+  MP3, M4A, MKV and MP4 of the same video. All five files were kept, and the
+  WebM was byte-identical.
+
+**Supersedes:** the "same type only" rule in D-16 (its cleanup rules stand).

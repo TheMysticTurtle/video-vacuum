@@ -122,7 +122,7 @@ pub fn prepare(
 
     // Read the folder once; pick the name and take the cleanup snapshot from that.
     let names = folder_names(&folder);
-    let stem = unique_stem(&names, &sanitize_file_name(&request.file_name), request.format.extensions());
+    let stem = unique_stem(&names, &sanitize_file_name(&request.file_name), request.format.collides_with());
     let existing = with_stem(&names, &stem);
 
     let source = if lookup.is_fresh() {
@@ -410,15 +410,39 @@ mod tests {
         }
     }
 
+    /// D-33: a download must never pick a name whose in-between file would
+    /// be an existing file of another type (yt-dlp would use and delete it).
+    #[test]
+    fn audio_downloads_never_reuse_a_name_held_by_another_media_file() {
+        let dir = temp("collide");
+        let taken = |base: &str, format: Format| unique_stem(&folder_names(&dir), base, format.collides_with());
+        fs::write(dir.join("Zoo.webm"), b"video").unwrap();
+        assert_eq!(taken("Zoo", Format::Mp3), "Zoo (2)", "MP3 audio arrives as Zoo.webm");
+        assert_eq!(taken("Zoo", Format::M4a), "Zoo (2)", "M4A may fall back to a .webm source");
+        assert_eq!(taken("Zoo", Format::Mkv), "Zoo (2)", "MKV may repackage a .webm");
+        assert_eq!(taken("Zoo", Format::Mp4), "Zoo (2)", "MP4 may repackage a .webm");
+        fs::write(dir.join("Song.m4a"), b"audio").unwrap();
+        assert_eq!(taken("Song", Format::Mp3), "Song (2)", "MP3 audio may arrive as Song.m4a");
+        assert_eq!(taken("Song", Format::Webm), "Song", "a WebM download never makes Song.m4a");
+        fs::write(dir.join("Talk.mp3"), b"audio").unwrap();
+        assert_eq!(taken("Talk", Format::Mp4), "Talk", "an MP4 download never makes Talk.mp3");
+        for format in [Format::Mp4, Format::Webm, Format::Mkv, Format::M4a, Format::Mp3] {
+            let own = format.label().to_lowercase();
+            let own = if own == "webm" { "webm".to_string() } else { own };
+            assert!(format.collides_with().contains(&own.as_str()), "{own}: its own type always counts");
+        }
+        let _ = fs::remove_dir_all(dir);
+    }
+
     #[test]
     fn names_are_never_reused_and_cleanup_only_touches_ours() {
         let dir = temp("names");
         let taken = |base: &str, exts: &[&str]| unique_stem(&folder_names(&dir), base, exts);
 
-        let mp4 = Format::Mp4.extensions();
+        let mp4 = Format::Mp4.collides_with();
         assert_eq!(taken("Clip", mp4), "Clip");
-        fs::write(dir.join("Clip.txt"), b"x").unwrap(); // not the same type: name still free
-        fs::write(dir.join("Clip.m4a"), b"x").unwrap();
+        fs::write(dir.join("Clip.txt"), b"x").unwrap(); // can't clash: name still free
+        fs::write(dir.join("Clip.m4a"), b"x").unwrap(); // an MP4 download never makes Clip.m4a
         assert_eq!(taken("Clip", mp4), "Clip");
         fs::write(dir.join("Clip.mp4"), b"x").unwrap();
         assert_eq!(taken("Clip", mp4), "Clip (2)");
@@ -427,7 +451,7 @@ mod tests {
         fs::write(dir.join("Clip (3).webm.part"), b"x").unwrap(); // another download in progress
         assert_eq!(taken("Clip", mp4), "Clip (4)");
         fs::write(dir.join("Clip.mkv"), b"x").unwrap(); // WebM may end up as .mkv
-        assert_eq!(taken("Clip", Format::Webm.extensions()), "Clip (2)");
+        assert_eq!(taken("Clip", Format::Webm.collides_with()), "Clip (2)");
 
         // A download into "Notes" where "Notes.txt" already exists: cleanup keeps Notes.txt.
         fs::write(dir.join("Notes.txt"), b"x").unwrap();

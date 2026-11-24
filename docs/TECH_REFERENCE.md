@@ -86,14 +86,14 @@ cd src-tauri && cargo clippy --all-targets -- -D warnings && cargo test
 npm run check   # tsc --noEmit
 ```
 
-The Rust tests (25) cover:
+The Rust tests (30) cover:
 - link cleanup (12 good forms, 9 bad)
 - file-name safety
 - progress-line parsing
 - plain-word errors
 - yt-dlp JSON → card info
 - format options, including MP3 bitrates and refusing a bitrate not on the list
-- unique naming and cleanup that only touches its own files
+- unique naming (no name whose in-between file would clash with an existing file, D-33) and cleanup that only touches its own files
 - history/settings save, reload and newer-file protection
 - removing an entry, clearing history, history turned off (nothing written,
   but the session can still open the file), v2.0.0 settings reading as "keep history"
