@@ -65,11 +65,11 @@ fn log_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
     app.path().app_local_data_dir().map(|dir| dir.join("logs")).map_err(|err| err.to_string())
 }
 
-// ─── Tools ──────────────────────────────────────────────────────────────────
+// ─── Tools (bundled, D-32) ──────────────────────────────────────────────────
 
 #[tauri::command]
 async fn check_tools(app: AppHandle, state: State<'_, AppState>) -> Result<ToolsStatus, String> {
-    // The tools were found at startup; this only adds yt-dlp's version (~1 s).
+    // Runs each tool's version command (about 1 s, mostly yt-dlp starting up).
     let tools = lock(&state.tools).clone();
     let status = blocking(move || tools.status()).await?;
     log_tools(&app, &status);
@@ -77,40 +77,58 @@ async fn check_tools(app: AppHandle, state: State<'_, AppState>) -> Result<Tools
 }
 
 fn log_tools(app: &AppHandle, status: &ToolsStatus) {
-    let version = status.ytdlp_version.as_deref().unwrap_or("not found");
+    let summary = status
+        .tools
+        .iter()
+        .map(|t| format!("{} {}", t.name, t.installed.as_deref().unwrap_or("missing")))
+        .collect::<Vec<_>>()
+        .join(", ");
     if status.ready {
-        note(app, Level::Info, format!("Tools ready: yt-dlp {version}, FFmpeg and Deno found"), None);
+        note(app, Level::Info, format!("Tools ready: {summary}"), None);
     } else {
+        let problems = status
+            .tools
+            .iter()
+            .filter(|t| t.state != "ok")
+            .map(|t| match t.state {
+                "missing" => format!("{} is missing (needs {})", t.name, t.required),
+                _ => format!("{} {} is older than {}", t.name, t.installed.as_deref().unwrap_or("?"), t.required),
+            })
+            .collect::<Vec<_>>()
+            .join("; ");
         note(
             app,
             Level::Warn,
-            format!("Missing tools: {}", status.missing.join(", ")),
-            Some("Fix: click \"Install missing tools\" at the top of the window (uses winget).".into()),
+            format!("Tools need attention: {problems}"),
+            Some("Fix: click \"Restore\" in the banner at the top, or reinstall Video Vacuum.".into()),
         );
     }
 }
 
+/// Puts back the pinned copy of each missing or outdated tool, downloaded
+/// from its official release and checked against its SHA-256.
 #[tauri::command]
-async fn install_tools(app: AppHandle, state: State<'_, AppState>) -> Result<ToolsStatus, String> {
-    note(&app, Level::Info, "Installing the missing tools with winget", None);
-    let current = lock(&state.tools).clone();
+async fn restore_tools(app: AppHandle, state: State<'_, AppState>) -> Result<ToolsStatus, String> {
+    let tools = lock(&state.tools).clone();
+    let log_app = app.clone();
     let result = blocking(move || {
-        current.install_missing()?;
-        let tools = Tools::find();
-        let status = tools.status();
-        Ok::<_, String>((tools, status))
+        let restored = tools.restore(&|step| note(&log_app, Level::Info, step, None))?;
+        Ok::<_, String>((restored, tools.status()))
     })
     .await?;
-    let (tools, status) = match result {
-        Ok(done) => done,
-        Err(message) => {
-            note(&app, Level::Error, "Installing the tools failed", Some(message.clone()));
-            return Err(message);
+    match result {
+        Ok((restored, status)) => {
+            if restored.is_empty() {
+                note(&app, Level::Info, "Nothing to restore: every tool is in place", None);
+            }
+            log_tools(&app, &status);
+            Ok(status)
         }
-    };
-    *lock(&state.tools) = tools;
-    log_tools(&app, &status);
-    Ok(status)
+        Err(message) => {
+            note(&app, Level::Error, "Restoring the tools failed", Some(message.clone()));
+            Err(message)
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -119,23 +137,15 @@ struct UpdateResult {
     output: String,
 }
 
+/// yt-dlp's own updater (`yt-dlp -U`) on the bundled copy.
 #[tauri::command]
 async fn update_ytdlp(app: AppHandle, state: State<'_, AppState>) -> Result<UpdateResult, String> {
-    note(&app, Level::Info, "Updating yt-dlp with winget", None);
+    note(&app, Level::Info, "Updating yt-dlp (its own updater, from yt-dlp's GitHub releases)", None);
     let tools = lock(&state.tools).clone();
     let result: Result<UpdateResult, String> = blocking(move || {
-        let output = tools
-            .update_command()?
-            .output()
-            .map_err(|err| format!("Couldn't start the update: {err}"))?;
-        let text = format!("{}{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
-        // winget draws progress bars with carriage returns; keep only the readable lines.
-        let readable: Vec<&str> = text
-            .lines()
-            .map(|line| line.rsplit('\r').next().unwrap_or("").trim())
-            .filter(|line| line.chars().any(char::is_alphanumeric))
-            .collect();
-        Ok(UpdateResult { version: tools.ytdlp_version(), output: readable.join("\n") })
+        let output = tools.update_ytdlp()?;
+        let version = tools.status().ytdlp_version;
+        Ok(UpdateResult { version, output })
     })
     .await?;
     match &result {
@@ -291,15 +301,19 @@ fn open_link(url: String, app: AppHandle) -> Result<(), String> {
     app.opener().open_url(parsed.as_str(), None::<&str>).map_err(|err| err.to_string())
 }
 
-/// The project's own pages, opened from the bottom bar. The page only names
-/// one of these; the addresses are fixed here.
+/// The project's own pages and the bundled tools' official repositories.
+/// The page only names one of these; the addresses are fixed here.
 #[tauri::command]
 fn open_project_page(page: String, app: AppHandle) -> Result<(), String> {
     const REPO: &str = "https://github.com/TheMysticTurtle/video-vacuum";
     let url = match page.as_str() {
         "github" => REPO.to_string(),
         "privacy" => format!("{REPO}/blob/main/PRIVACY.md"),
-        _ => return Err("Unknown page.".into()),
+        // A bundled tool's official repository, from tools.json (compiled in).
+        other => match other.strip_prefix("tool:").and_then(|id| tools::pins().into_iter().find(|p| p.id == id)) {
+            Some(pin) => pin.repo,
+            None => return Err("Unknown page.".into()),
+        },
     };
     app.opener().open_url(url, None::<&str>).map_err(|err| err.to_string())
 }
@@ -470,9 +484,8 @@ pub fn run() {
                 }
             }
             app.manage(AppState {
-                // Found before the window opens (a quick folder check), so an
-                // early paste never finds the tools "missing".
-                tools: Mutex::new(Tools::find()),
+                // The bundled tools: <install dir>\tools (D-32).
+                tools: Mutex::new(Tools::new(app.path().resource_dir()?.join("tools"))),
                 jobs: Mutex::new(HashMap::new()),
                 store: Mutex::new(store),
                 lookup: Mutex::new(None),
@@ -486,7 +499,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             check_tools,
-            install_tools,
+            restore_tools,
             update_ytdlp,
             get_info,
             start_download,

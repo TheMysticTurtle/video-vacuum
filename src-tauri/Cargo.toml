@@ -23,11 +23,7 @@ tauri-plugin-opener = "2.7"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 url = "2"
-
-[target.'cfg(windows)'.dependencies]
-# Reads the user's current PATH from the registry, so tools installed by winget
-# while the app is open are found without restarting it.
-winreg = "0.56"
+sha2 = "0.11.1"
 
 [profile.release]
 codegen-units = 1

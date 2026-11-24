@@ -34,6 +34,10 @@
     }
   },
   "bundle": {
+    "resources": {
+      "tools/": "tools/",
+      "tools-licenses/": "tools/licenses/"
+    },
     "active": true,
     "targets": ["nsis"],
     "publisher": "TheMysticTurtle",

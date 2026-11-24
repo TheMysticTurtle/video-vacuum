@@ -12,6 +12,10 @@ media/
 # 1024 px icon source made from media/ by the same script (the generated icon sizes are committed)
 src-tauri/icons/app-icon.png
 
+# The bundled tools (yt-dlp, Deno, FFmpeg; ~130 MB). tools/fetch-tools.ps1 downloads
+# the pinned versions from src-tauri/tools.json; the Release workflow does the same.
+src-tauri/tools/
+
 # Other AI tools' separate working copies of this repo
 worktrees/
 

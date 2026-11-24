@@ -377,3 +377,56 @@ setting are gone; the folder lives in Settings only.
 - Saved logs hold video titles and file paths, like History. `PRIVACY.md`
   says so, and nothing leaves the PC.
 - The uninstaller's "Delete the application data" removes the logs too.
+
+### D-32 ✅ The tools ship inside the installer: yt-dlp, Deno and a small FFmpeg (2026-11-23)
+**Decision:**
+- The installer puts `yt-dlp.exe`, `deno.exe`, `ffmpeg.exe` and `ffprobe.exe`
+  in `<install dir>\tools\`, and the app uses only those copies.
+- No winget, no setup step, no console windows: install it and it works.
+- `src-tauri/tools.json` pins each tool's version, official download and
+  SHA-256. The version is also the minimum the app accepts.
+- A banner appears only if a tool is missing or older than that minimum. It
+  says what each tool does, links its official repository, and offers
+  **Restore**: that downloads the exact pinned file from its official
+  release, checks the SHA-256 and puts it in place. Reinstalling works too.
+- **Update yt-dlp** stays and runs yt-dlp's own updater (`yt-dlp -U`) on the
+  bundled copy; the leftover `yt-dlp.exe.old` is deleted.
+- FFmpeg is our own trimmed build (`.github/workflows/build-ffmpeg.yml`):
+  FFmpeg 9.1 from GPG-verified source with static LAME 3.100,
+  `--disable-everything` plus only what the app uses, no `--enable-gpl`
+  (so it's LGPL). It's published once as the `tools-ffmpeg-9.1` release and
+  pinned from there.
+
+**Why:**
+- Owner, 2026-11-23: "i want our installer to have everything they need in
+  one clean go without any sketchy downloading of an extra 600mb", and "like
+  normal software. not half developer setup".
+- On the dev PC the winget packages were about 612 MB: FFmpeg's package
+  alone was 495 MB, and its `ffplay.exe` is never used.
+- The spike (runs 45319314183 and the local tests) measured:
+  - the trimmed `ffmpeg.exe` at 4.9 MB and `ffprobe.exe` at 4.6 MB
+  - the whole bundle at 133 MB installed, about 55 MB compressed
+  - 10 of 10 format downloads working with only the bundled tools
+  - `yt-dlp -U` updating a bundled copy in place
+- Deno is yt-dlp's recommended JavaScript runtime, enabled by default, and
+  runs the challenge code with no file or network access (yt-dlp wiki,
+  "EJS"). The owner: "i dont even wanna dick with quickJS".
+
+**Rejected:**
+- An installer step that runs winget (owner: "that sounds sketchy as fuck to
+  someone that doesnt know what's going on").
+- Keeping winget with a better banner.
+- QuickJS instead of Deno.
+
+**Consequence:**
+- The installer grows from about 2.7 MB to about 55 MB.
+- Deno and FFmpeg update only with Video Vacuum releases; yt-dlp updates on
+  its own.
+- Reinstalling or upgrading puts the pinned yt-dlp back, which can be older
+  than one the user updated to. It still meets the minimum, and Update yt-dlp
+  brings it forward again.
+- Restore needs Windows' own `curl.exe` and `tar.exe` (Windows 10 1803+/11,
+  already required) and the `sha2` crate (MIT OR Apache-2.0).
+- `winreg` is gone, and so is all the winget code.
+
+**Supersedes:** D-15.

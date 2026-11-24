@@ -9,11 +9,22 @@ export type Format = "mp4" | "webm" | "mkv" | "m4a" | "mp3";
 export const MP3_BITRATES = [128, 192, 256, 320] as const;
 export const MP3_DEFAULT_KBPS = 192;
 
+/** One bundled tool (D-32): yt-dlp, Deno or FFmpeg. */
+export interface ToolInfo {
+  id: string;
+  name: string;
+  purpose: string;
+  repo: string;
+  license: string;
+  required: string; // the version this app needs (or newer)
+  installed: string | null; // null = missing
+  state: "ok" | "missing" | "outdated";
+}
+
 export interface ToolsStatus {
   ready: boolean;
-  missing: string[];
+  tools: ToolInfo[];
   ytdlpVersion: string | null;
-  canInstall: boolean;
 }
 
 export interface VideoInfo {
@@ -87,7 +98,7 @@ export type DownloadEvent =
 
 export const api = {
   checkTools: () => invoke<ToolsStatus>("check_tools"),
-  installTools: () => invoke<ToolsStatus>("install_tools"),
+  restoreTools: () => invoke<ToolsStatus>("restore_tools"),
   updateYtdlp: () => invoke<{ version: string | null; output: string }>("update_ytdlp"),
   getInfo: (url: string) => invoke<VideoInfo>("get_info", { url }),
   startDownload: (request: DownloadRequest, onEvent: (event: DownloadEvent) => void) => {
@@ -102,7 +113,8 @@ export const api = {
   openFile: (id: string) => invoke<void>("open_file", { id }),
   showInFolder: (id: string) => invoke<void>("show_in_folder", { id }),
   openLink: (url: string) => invoke<void>("open_link", { url }),
-  openProjectPage: (page: "github" | "privacy") => invoke<void>("open_project_page", { page }),
+  /** Fixed addresses in Rust: "github", "privacy", or "tool:<id>" (a bundled tool's official repository). */
+  openProjectPage: (page: "github" | "privacy" | `tool:${string}`) => invoke<void>("open_project_page", { page }),
   getSettings: () => invoke<SettingsView>("get_settings"),
   setDefaultFolder: (folder: string | null) => invoke<SettingsView>("set_default_folder", { folder }),
   setKeepHistory: (keep: boolean) => invoke<SettingsView>("set_keep_history", { keep }),

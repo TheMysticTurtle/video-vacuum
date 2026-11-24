@@ -43,9 +43,8 @@ the tools it uses all need Windows 10 or newer.
    - Windows may show "Windows protected your PC" because the installer isn't
      code-signed: click **More info → Run anyway**. See
      [Windows may warn you about the installer](#windows-may-warn-you-about-the-installer).
-2. Open **Video Vacuum**. The first time, if the free tools it needs are missing
-   (yt-dlp, ffmpeg, deno), click **Install missing tools**. A winget window opens;
-   answer its questions there.
+2. Open **Video Vacuum**. That's it: everything it needs comes inside the
+   installer, so nothing else is downloaded. See [What's inside](#whats-inside).
 
 ## Use it
 
@@ -121,12 +120,43 @@ size. Pick M4A for the original.
 **Update yt-dlp** in the bar at the bottom of the window, and check the **Log**
 for what yt-dlp said.
 
+## What's inside
+
+The installer carries three free, open-source tools in the app's own `tools`
+folder. Video Vacuum uses only these copies:
+
+| Tool | What it does | License | Official source |
+|---|---|---|---|
+| **yt-dlp** | Downloads the video from YouTube | Unlicense | [github.com/yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp) |
+| **Deno** | Runs YouTube's player code, which yt-dlp needs (yt-dlp's recommended runtime) | MIT | [github.com/denoland/deno](https://github.com/denoland/deno) |
+| **FFmpeg** (with LAME) | Joins the video and audio into one file, and makes MP3s | LGPL | [ffmpeg.org](https://ffmpeg.org), [LAME](https://lame.sourceforge.io) |
+
+- **yt-dlp and Deno** are the official release files, unchanged.
+- **FFmpeg** is a small build made for this app: only the parts Video Vacuum
+  uses, about 10 MB instead of several hundred. The
+  [Build FFmpeg](.github/workflows/build-ffmpeg.yml) workflow builds it on
+  GitHub Actions from FFmpeg's signed source code. Its source links and
+  build settings are in `tools\licenses\SOURCES.txt` inside the app.
+- **Every file is pinned.** Its exact version and SHA-256 checksum are listed
+  in [`src-tauri/tools.json`](src-tauri/tools.json). Releases are built only
+  from those files.
+- **Update yt-dlp** (in the bottom bar) uses yt-dlp's own updater, because
+  YouTube changes often.
+- **If a tool ever goes missing** (antivirus sometimes removes files), a
+  banner explains what each tool does and offers **Restore**. That downloads
+  the exact pinned version from the tool's official release and checks its
+  checksum. Reinstalling Video Vacuum works too.
+- The tools' license texts are in the app's `tools\licenses` folder.
+
 ## Build it yourself
 
-You need Node.js, Rust (MSVC toolchain) and the WebView2 runtime (built into Windows 10/11).
+You need Node.js, Rust (MSVC toolchain) and the WebView2 runtime (built into
+Windows 10/11). First fetch the bundled tools: the pinned versions are
+downloaded and checksum-checked into `src-tauri/tools/`.
 
-```sh
+```powershell
 npm install
+powershell -ExecutionPolicy Bypass -File tools\fetch-tools.ps1
 npm run tauri dev     # run in development
 npm run tauri build   # make the installer in src-tauri/target/release/bundle/nsis/
 ```
