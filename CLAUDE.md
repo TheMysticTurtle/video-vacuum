@@ -42,13 +42,13 @@ name and folder, download. It keeps a searchable History drawer. Open source
   polish (D-30), the bottom bar and the diagnostic Log (D-31), and README
   screenshots. The owner tested the installer ("it's beautiful! seems to work
   great").
-  **In progress: v2.2.0 on `feature/bundled-tools`** (not merged):
+  **v2.2.0 is released** (2026-11-23, tag `v2.2.0` at `6adc762`, marked Latest):
   - yt-dlp, Deno and a small FFmpeg ship inside the installer (D-32):
     pinned in `src-tauri/tools.json`, fetched by `tools/fetch-tools.ps1`
-    into `src-tauri/tools/` (git-ignored; needed before any Rust build).
+    into `src-tauri/tools/` (git-ignored; **run it before any Rust build**).
+  - The FFmpeg zip lives in the `tools-ffmpeg-9.1` release.
   - The fix for an MP3 deleting a same-name WebM (D-33).
-  - Waiting on the owner: publish the FFmpeg zip as the `tools-ffmpeg-9.1`
-    release, and test the installer.
+  - The owner tested the installer. Nothing is queued.
 - **Author:** always `TheMysticTurtle <101545919+TheMysticTurtle@users.noreply.github.com>`
   (repo config and global), in commits, copyright lines and credits. Never
   "TheMysticTestudine" (another account) and never a personal email.

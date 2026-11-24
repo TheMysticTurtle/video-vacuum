@@ -2,7 +2,7 @@
 
 Newest on top. Forward-looking items live in `ROADMAP.md`; the why lives in `docs/DECISIONS.md`.
 
-### Session 2026-11-23 (night) — the tools ship inside the installer (v2.2.0)
+### Session 2026-11-23 (night) — the tools ship inside the installer (v2.2.0, released)
 **Goal:** owner: "i want our installer to have everything they need in one
 clean go without any sketchy downloading of an extra 600mb of crap", "like
 normal software", with a version check, Update yt-dlp kept, and a banner
@@ -63,12 +63,23 @@ that explains each tool and offers to restore it.
   - WebM, then MP3/M4A/MKV/MP4 of the same video: all five files kept, and
     the WebM was byte-identical.
 
-**Where we landed:** on `feature/bundled-tools`, not merged.
+**Owner's test and the release:**
+- The owner: "that seemed to work great! it installed pretty quick on my end
+  and worked fine. i downloaded each file type. I think we're finally ready
+  to properly release this one."
+- Merged `feature/bundled-tools` into `main` (`6adc762`, the same tree as
+  the tested build) and pushed.
+- Published the `tools-ffmpeg-9.1` release with the tested zip, not marked
+  Latest. The public download's SHA-256 matches `tools.json`.
+- Ran the Release workflow (run 45335023329): every step passed in about
+  5 minutes. The runner fetched the three tools and every SHA-256 matched.
+- Published [Video Vacuum v2.2.0](https://github.com/TheMysticTurtle/video-vacuum/releases/tag/v2.2.0),
+  marked Latest. Tag at `6adc762`; installer 58.6 MB.
+- Deleted the `spike/bundled-tools` branch on GitHub and locally.
 
-**Next:**
-1. The owner OKs publishing the FFmpeg zip as the `tools-ffmpeg-9.1` release.
-2. The owner tests the 2.2.0 installer.
-3. Merge, push, release.
+**Where we landed:** v2.2.0 released.
+
+**Next:** nothing queued.
 
 ### Session 2026-11-23 — owner testing, the 403, Settings panel, Log, v2.1.0 installer
 **Goal:** the owner tries the build before anything reaches `main`, then a

@@ -30,7 +30,9 @@
 
 ## 2. Next
 
-**v2.2.0: the tools ship inside the installer** (D-32), on `feature/bundled-tools`:
+Nothing queued. The owner picks from the backlog.
+
+**Done 2026-11-23: v2.2.0, the tools ship inside the installer** (D-32):
 
 | | What | State |
 |---|---|---|
@@ -39,9 +41,10 @@
 | `[x]` | App: bundled `tools` folder, version check, Restore (checksum-checked), Update yt-dlp via `-U`; winget code removed | built and tested in a hidden window |
 | `[x]` | Release workflow fetches the pinned tools; `tools/fetch-tools.ps1` for local builds | done |
 | `[x]` | **Fix (D-33):** an MP3 download could delete a same-name WebM (bug in released v2.1.0) | fixed and tested |
-| `[?]` | **Publish the FFmpeg zip once** as the `tools-ffmpeg-9.1` release (needed by Restore and the Release workflow) | waiting on the owner's OK |
-| `[?]` | **Owner tests the v2.2.0 installer**, then merge into `main` | waiting on the owner |
-| `[ ]` | Release v2.2.0; delete the `spike/bundled-tools` branch | after the owner's OK |
+| `[x]` | **Owner tested the v2.2.0 installer** ("that seemed to work great! … i downloaded each file type"); merged into `main` (`6adc762`) | done |
+| `[x]` | **Published `tools-ffmpeg-9.1`**: the tested zip, not marked Latest; the public download's SHA-256 matches `tools.json` | done |
+| `[x]` | **Released v2.2.0** (run 45335023329, 5 min, every step passed; the three tools fetched and checksum-checked on the runner); tag `v2.2.0` at `6adc762`; installer `Video.Vacuum_2.2.0_x64-setup.exe` 58.6 MB; marked Latest | done |
+| `[x]` | Deleted the `spike/bundled-tools` branch | done |
 
 ## 3. Milestones
 
@@ -49,6 +52,7 @@
 - `[x]` v2.0.0 desktop app: paste, card, format/quality/name/folder, progress + cancel, History drawer with default folder and search, update button, tools check, installer
 - `[x]` Public release: v2.0.0 on GitHub, repo public (2026-11-22)
 - `[x]` v2.1.0: history privacy, MP3, Settings and theme, bottom bar and Log, README walkthrough (2026-11-23)
+- `[x]` v2.2.0: everything in one installer (yt-dlp, Deno, small FFmpeg), version check and Restore, the MP3/WebM fix (2026-11-23)
 
 ## 4. Polish checklist
 
