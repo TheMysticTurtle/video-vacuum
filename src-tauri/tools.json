@@ -34,9 +34,9 @@
     {
       "id": "ffmpeg",
       "name": "FFmpeg",
-      "purpose": "Joins the video and audio into one file, and makes MP3s.",
+      "purpose": "Joins the video and audio into one file, and makes MP3s. A small build made for Video Vacuum.",
       "repo": "https://github.com/FFmpeg/FFmpeg",
-      "license": "LGPL-2.1-or-later (a small build made for Video Vacuum)",
+      "license": "LGPL-2.1-or-later",
       "version": "9.1",
       "files": ["ffmpeg.exe", "ffprobe.exe"],
       "versionArgs": ["-version"],

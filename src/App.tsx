@@ -168,6 +168,8 @@ export default function App() {
       const before = tools?.ytdlpVersion;
       const result = await api.updateYtdlp();
       setTools((t) => (t ? { ...t, ytdlpVersion: result.version } : t));
+      // Re-check every tool, so a banner about an old yt-dlp goes away (D-32).
+      api.checkTools().then(setTools).catch(() => undefined);
       // Plain words for the common outcomes; the full output otherwise.
       const message =
         result.version && result.version !== before

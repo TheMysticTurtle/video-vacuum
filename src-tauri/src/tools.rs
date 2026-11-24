@@ -261,7 +261,10 @@ fn fetch(url: &str, to: &Path) -> Result<(), String> {
     if output.status.success() {
         Ok(())
     } else {
-        Err(format!("Download failed: {}", String::from_utf8_lossy(&output.stderr).trim()))
+        Err(format!(
+            "Couldn't download it. Check your internet connection and try again, or reinstall Video Vacuum. ({})",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ))
     }
 }
 
