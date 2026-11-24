@@ -1,0 +1,123 @@
+# Builds the small FFmpeg that ships inside Video Vacuum (D-32).
+#
+# Cross-compiled for Windows on Linux with MinGW-w64, from FFmpeg's
+# GPG-signed source and LAME's checksum-pinned source. Trimmed with
+# --disable-everything plus only what the app uses:
+# - joining and repackaging streams: MP4/M4A, WebM/MKV, MP3, MPEG-TS input
+# - MP3 encoding with LAME
+# - ffprobe for yt-dlp's checks
+# No --enable-gpl, so FFmpeg and LAME stay LGPL.
+#
+# The result is a zip (artifact). The owner publishes that exact zip once as
+# the "tools-ffmpeg-<version>" release; src-tauri/tools.json pins its URL and
+# SHA-256, and both the Release workflow and the app's "Restore" use it.
+# Rebuild only when FFmpeg or LAME should change.
+
+name: Build FFmpeg
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/bundled-tools]
+    paths: [.github/workflows/build-ffmpeg.yml]
+
+permissions:
+  contents: read
+
+env:
+  FFMPEG_VERSION: "9.1"
+  # FFmpeg 9.1 source tarball, SHA-256 (also checked against FFmpeg's GPG signature).
+  FFMPEG_SHA256: "1a4d394ae63d190a526cd052eb4415c156b5c5e2df37efab41a7de0b8fde2433"
+  LAME_VERSION: "3.100"
+  # LAME 3.100 source tarball, SHA-256 (SourceForge release).
+  LAME_SHA256: "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e"
+  HOST: x86_64-w64-mingw32
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Install the cross-compiler and tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q mingw-w64 nasm pkg-config make gnupg xz-utils zip
+
+      - name: Build LAME (static, MP3 encoder only)
+        run: |
+          set -euo pipefail
+          prefix="$RUNNER_TEMP/prefix"; mkdir -p "$prefix" src && cd src
+          curl -fsSL --retry 5 -o lame.tar.gz "https://downloads.sourceforge.net/project/lame/lame/${LAME_VERSION}/lame-${LAME_VERSION}.tar.gz"
+          echo "${LAME_SHA256}  lame.tar.gz" | sha256sum -c -
+          tar xf lame.tar.gz && cd "lame-${LAME_VERSION}"
+          ./configure --host="$HOST" --prefix="$prefix" --enable-static --disable-shared \
+            --disable-frontend --disable-decoder --disable-gtktest
+          make -j"$(nproc)" && make install
+          cp COPYING "$RUNNER_TEMP/LAME-COPYING.txt"
+
+      - name: Download and verify FFmpeg
+        run: |
+          set -euo pipefail
+          cd src
+          curl -fsSL --retry 5 -O "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz"
+          curl -fsSL --retry 5 -O "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz.asc"
+          curl -fsSL --retry 5 -o ffmpeg-devel.asc https://ffmpeg.org/ffmpeg-devel.asc
+          gpg --batch --import ffmpeg-devel.asc
+          gpg --batch --verify "ffmpeg-${FFMPEG_VERSION}.tar.xz.asc" "ffmpeg-${FFMPEG_VERSION}.tar.xz"
+          echo "${FFMPEG_SHA256}  ffmpeg-${FFMPEG_VERSION}.tar.xz" | sha256sum -c -
+          tar xf "ffmpeg-${FFMPEG_VERSION}.tar.xz"
+
+      - name: Configure and build FFmpeg (trimmed)
+        run: |
+          set -euo pipefail
+          prefix="$RUNNER_TEMP/prefix"
+          cd "src/ffmpeg-${FFMPEG_VERSION}"
+          configure_args=(
+            --prefix="$prefix" --arch=x86_64 --target-os=mingw32 --cross-prefix="$HOST-"
+            --pkg-config=pkg-config --pkg-config-flags=--static
+            --extra-cflags="-I$prefix/include" --extra-ldflags="-L$prefix/lib -static -static-libgcc"
+            --enable-static --disable-shared
+            --disable-debug --disable-doc --disable-ffplay --disable-network --disable-autodetect
+            --enable-w32threads
+            --disable-everything
+            --enable-ffmpeg --enable-ffprobe
+            --enable-libmp3lame
+            --enable-protocol=file,pipe
+            --enable-demuxer=mov,matroska,mp3,aac,ogg,mpegts,wav,flac
+            --enable-muxer=mp4,ipod,mov,matroska,webm,mp3,adts,ogg,opus
+            --enable-parser=aac,aac_latm,h264,hevc,vp8,vp9,av1,opus,vorbis,mpegaudio,flac
+            --enable-bsf=aac_adtstoasc,extract_extradata,h264_mp4toannexb,hevc_mp4toannexb,vp9_superframe,vp9_superframe_split,av1_frame_merge,av1_frame_split,null
+            --enable-decoder=aac,aac_latm,opus,vorbis,mp3,mp3float,flac,pcm_s16le,pcm_f32le
+            --enable-encoder=libmp3lame
+            --enable-filter=aresample,aformat,anull,atrim,null,format,trim,copy
+            --enable-swresample
+          )
+          ./configure "${configure_args[@]}"
+          make -j"$(nproc)"
+          "$HOST-strip" ffmpeg.exe ffprobe.exe
+
+          out="$GITHUB_WORKSPACE/out"; mkdir -p "$out"
+          cp ffmpeg.exe ffprobe.exe "$out/"
+          cp LICENSE.md "$out/FFmpeg-LICENSE.md"
+          cp COPYING.LGPLv2.1 "$out/COPYING.LGPLv2.1.txt"
+          cp "$RUNNER_TEMP/LAME-COPYING.txt" "$out/"
+          {
+            echo "Trimmed FFmpeg ${FFMPEG_VERSION} for Video Vacuum (LGPL-2.1-or-later), with LAME ${LAME_VERSION} (LGPL)."
+            echo
+            echo "Source code:"
+            echo "  FFmpeg: https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz  sha256 ${FFMPEG_SHA256}"
+            echo "  LAME:   https://downloads.sourceforge.net/project/lame/lame/${LAME_VERSION}/lame-${LAME_VERSION}.tar.gz  sha256 ${LAME_SHA256}"
+            echo "  Build recipe: https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_SHA}/.github/workflows/build-ffmpeg.yml"
+            echo
+            echo "FFmpeg configure options:"
+            printf '  %s\n' "${configure_args[@]}"
+          } > "$out/SOURCES.txt"
+          (cd "$out" && zip -9 -X "../video-vacuum-ffmpeg-${FFMPEG_VERSION}-win64.zip" *)
+          ls -la "$out" "$GITHUB_WORKSPACE"/*.zip
+          sha256sum "$GITHUB_WORKSPACE"/*.zip | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the zip
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: video-vacuum-ffmpeg-win64
+          path: video-vacuum-ffmpeg-*-win64.zip
+          retention-days: 14
